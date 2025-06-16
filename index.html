@@ -1040,7 +1040,7 @@
                 this.x = path[0].x;
                 this.y = path[0].y;
                 this.pathIndex = 0;
-                this.maxHp = 120;
+                this.maxHp = 200;
                 this.hp = this.maxHp;
                 this.reward = 18;
                 this.researchReward = 1;
@@ -1055,8 +1055,8 @@
                 this.maxShield = 0;
                 
                 if (type === 'strong') {
-                    this.maxHp = 250;
-                    this.hp = 250;
+                    this.maxHp = 500;
+                    this.hp = 500;
                     this.reward = 35;
                     this.researchReward = 2;
                     this.baseSpeed *= 0.75;
@@ -1064,16 +1064,16 @@
                     this.size = 20;
                     this.armor = 5;
                 } else if (type === 'fast') {
-                    this.maxHp = 80;
-                    this.hp = 80;
+                    this.maxHp = 160;
+                    this.hp = 160;
                     this.reward = 25;
                     this.researchReward = 2;
                     this.baseSpeed *= 2.2;
                     this.speed = this.baseSpeed;
                     this.size = 12;
                 } else if (type === 'boss') {
-                    this.maxHp = 800;
-                    this.hp = 800;
+                    this.maxHp = 2000;
+                    this.hp = 2000;
                     this.reward = 150;
                     this.researchReward = 10;
                     this.baseSpeed *= 0.5;
@@ -1082,18 +1082,18 @@
                     this.armor = 15;
                     this.regeneration = 2;
                 } else if (type === 'shielded') {
-                    this.maxHp = 150;
-                    this.hp = 150;
-                    this.shield = 100;
-                    this.maxShield = 100;
+                    this.maxHp = 300;
+                    this.hp = 300;
+                    this.shield = 200;
+                    this.maxShield = 200;
                     this.reward = 40;
                     this.researchReward = 3;
                     this.baseSpeed *= 0.9;
                     this.speed = this.baseSpeed;
                     this.size = 18;
                 } else if (type === 'flying') {
-                    this.maxHp = 100;
-                    this.hp = 100;
+                    this.maxHp = 200;
+                    this.hp = 200;
                     this.reward = 30;
                     this.researchReward = 2;
                     this.baseSpeed *= 1.5;
