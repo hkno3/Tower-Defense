@@ -2704,15 +2704,6 @@
             canvas.dispatchEvent(clickEvent);
         });
         
-        // 마우스 휠로 게임 속도 조절
-        canvas.addEventListener('wheel', (e) => {
-            e.preventDefault();
-            if (e.deltaY < 0 && gameState.gameSpeed < 4) {
-                setGameSpeed(gameState.gameSpeed * 2);
-            } else if (e.deltaY > 0 && gameState.gameSpeed > 0.5) {
-                setGameSpeed(gameState.gameSpeed / 2);
-            }
-        });
         
         // 창 크기 변경 시 캔버스 조정
         window.addEventListener('resize', () => {
