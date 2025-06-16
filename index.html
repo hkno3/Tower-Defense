@@ -475,19 +475,19 @@
         <h4 style="margin-top: 0; color: #4cc9f0;">🔬 연구 업그레이드</h4>
         <div class="research-item">
             <span>💰 골드 보너스 (+20%)</span>
-            <button onclick="buyResearch('goldBonus')" id="goldBonusBtn">50💎</button>
+            <button onclick="buyResearch('goldBonus')" id="goldBonusBtn">500💎</button>
         </div>
         <div class="research-item">
             <span>❤️ 라이프 증가 (+10)</span>
-            <button onclick="buyResearch('moreLife')" id="moreLifeBtn">40💎</button>
+            <button onclick="buyResearch('moreLife')" id="moreLifeBtn">400💎</button>
         </div>
         <div class="research-item">
             <span>🏰 타워 데미지 (+25%)</span>
-            <button onclick="buyResearch('towerDamage')" id="towerDamageBtn">60💎</button>
+            <button onclick="buyResearch('towerDamage')" id="towerDamageBtn">600💎</button>
         </div>
         <div class="research-item">
             <span>⚡ 타워 속도 (+30%)</span>
-            <button onclick="buyResearch('towerSpeed')" id="towerSpeedBtn">80💎</button>
+            <button onclick="buyResearch('towerSpeed')" id="towerSpeedBtn">600💎</button>
         </div>
     </div>
 
@@ -1580,10 +1580,10 @@
         // 연구 시스템 (수정됨)
         function buyResearch(type) {
             const costs = {
-                goldBonus: 50,
-                moreLife: 40,
-                towerDamage: 60,
-                towerSpeed: 80
+                goldBonus: 500,
+                moreLife: 400,
+                towerDamage: 600,
+                towerSpeed: 600
             };
             
             // gameState.research는 연구 포인트를 저장하는 숫자값
@@ -2300,9 +2300,9 @@
             ['goldBonus', 'moreLife', 'towerDamage', 'towerSpeed'].forEach(researchType => {
                 let btn = document.getElementById(researchType + 'Btn');
                 if (btn && gameState.researchUpgrades && !gameState.researchUpgrades[researchType]) {
-                    let cost = researchType === 'goldBonus' ? 50 : 
-                              researchType === 'moreLife' ? 40 :
-                              researchType === 'towerDamage' ? 60 : 80;
+                    let cost = researchType === 'goldBonus' ? 500 : 
+                              researchType === 'moreLife' ? 400 :
+                              researchType === 'towerDamage' ? 600 : 600;
                     btn.disabled = gameState.research < cost;
                     btn.style.opacity = gameState.research >= cost ? '1' : '0.5';
                 }
@@ -2488,9 +2488,9 @@
                     btn.style.opacity = '0.5';
                     
                     // 원래 비용으로 텍스트 복원
-                    let cost = researchType === 'goldBonus' ? '50💎' : 
-                              researchType === 'moreLife' ? '40💎' :
-                              researchType === 'towerDamage' ? '60💎' : '80💎';
+                    let cost = researchType === 'goldBonus' ? '500💎' : 
+                              researchType === 'moreLife' ? '400💎' :
+                              researchType === 'towerDamage' ? '600💎' : '600💎';
                     btn.textContent = cost;
                 }
             });
