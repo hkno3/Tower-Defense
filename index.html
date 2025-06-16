@@ -1,0 +1,2765 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>타워 디펜스 Ultimate</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #0f0f23, #1a1a2e, #16213e);
+            color: white;
+            font-family: 'Arial', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            overflow-x: auto;
+        }
+        
+        h1 {
+            color: #4cc9f0;
+            margin-bottom: 20px;
+            text-shadow: 0 0 20px #4cc9f0;
+            font-size: 2.5em;
+            text-align: center;
+            animation: glow 2s ease-in-out infinite alternate;
+        }
+        
+        @keyframes glow {
+            from { text-shadow: 0 0 20px #4cc9f0; }
+            to { text-shadow: 0 0 30px #4cc9f0, 0 0 40px #7209b7; }
+        }
+        
+        #gameContainer {
+            position: relative;
+            border: 3px solid #4cc9f0;
+            border-radius: 15px;
+            box-shadow: 0 0 30px rgba(76, 201, 240, 0.4);
+            background: #16213e;
+        }
+        
+        #gameCanvas {
+            background: linear-gradient(45deg, #16213e, #1a1a2e);
+            cursor: crosshair;
+            border-radius: 12px;
+        }
+        
+        #ui {
+            margin-top: 20px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 15px;
+            font-size: 16px;
+            max-width: 900px;
+        }
+        
+        .stat {
+            background: rgba(76, 201, 240, 0.1);
+            padding: 10px 15px;
+            border-radius: 8px;
+            border: 1px solid #4cc9f0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .stat::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+            transition: left 0.5s;
+        }
+        
+        .stat:hover::before {
+            left: 100%;
+        }
+        
+        #controls {
+            margin: 15px 0;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        
+        .tower-btn {
+            padding: 12px 18px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 3px;
+            min-width: 90px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .tower-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(45deg, rgba(255,255,255,0.1), transparent);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        
+        .tower-btn:hover::before {
+            opacity: 1;
+        }
+        
+        .basic-tower { background: linear-gradient(45deg, #4cc9f0, #7209b7); }
+        .sniper-tower { background: linear-gradient(45deg, #ff6b6b, #ee5a24); }
+        .splash-tower { background: linear-gradient(45deg, #feca57, #ff9ff3); }
+        .slow-tower { background: linear-gradient(45deg, #4ecdc4, #44bd87); }
+        .laser-tower { background: linear-gradient(45deg, #a8e6cf, #ff8b94); }
+        
+        button {
+            padding: 12px 20px;
+            background: linear-gradient(45deg, #7209b7, #4cc9f0);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s;
+        }
+        
+        button:hover::before {
+            left: 100%;
+        }
+        
+        button:hover, .tower-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(76, 201, 240, 0.4);
+        }
+        
+        button:disabled, .tower-btn:disabled {
+            background: #555 !important;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .selected {
+            transform: translateY(-3px) scale(1.05);
+            box-shadow: 0 0 25px rgba(255, 255, 255, 0.6);
+            border: 2px solid white;
+        }
+        
+        #gameOver, #towerInfo, #nextWaveInfo {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.95);
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            display: none;
+            border: 2px solid #4cc9f0;
+            max-width: 400px;
+            backdrop-filter: blur(10px);
+        }
+        
+        #towerInfo {
+            top: 20%;
+            background: rgba(22, 33, 62, 0.95);
+        }
+        
+        #nextWaveInfo {
+            top: 30%;
+            background: rgba(22, 33, 62, 0.98);
+        }
+        
+        .upgrade-btn {
+            margin: 5px;
+            padding: 8px 15px;
+            font-size: 14px;
+        }
+        
+        #skillBar {
+            margin-top: 15px;
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+        }
+        
+        .skill-btn {
+            padding: 12px;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            position: relative;
+            transition: all 0.3s;
+            border: 2px solid transparent;
+        }
+        
+        .skill-btn:hover {
+            transform: scale(1.1);
+            border-color: white;
+        }
+        
+        .skill-cooldown {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        
+        .cost {
+            font-size: 12px;
+            opacity: 0.9;
+            background: rgba(0,0,0,0.3);
+            padding: 2px 4px;
+            border-radius: 3px;
+        }
+        
+        .buff-indicator {
+            position: absolute;
+            top: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #ffd700;
+            color: #000;
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-size: 10px;
+            font-weight: bold;
+            animation: bounce 0.5s ease-in-out infinite alternate;
+        }
+        
+        @keyframes bounce {
+            from { transform: translateX(-50%) translateY(0); }
+            to { transform: translateX(-50%) translateY(-3px); }
+        }
+        
+        .achievement {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: linear-gradient(45deg, #ffd700, #ffed4a);
+            color: #000;
+            padding: 15px 20px;
+            border-radius: 10px;
+            font-weight: bold;
+            transform: translateX(300px);
+            transition: transform 0.5s ease;
+            z-index: 1000;
+            box-shadow: 0 5px 15px rgba(255, 215, 0, 0.3);
+        }
+        
+        .achievement.show {
+            transform: translateX(0);
+        }
+        
+        .damage-number {
+            position: absolute;
+            font-weight: bold;
+            font-size: 14px;
+            pointer-events: none;
+            animation: damageFloat 1s ease-out forwards;
+        }
+        
+        @keyframes damageFloat {
+            0% { transform: translateY(0) scale(1); opacity: 1; }
+            100% { transform: translateY(-30px) scale(1.2); opacity: 0; }
+        }
+        
+        .mini-map {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 120px;
+            height: 80px;
+            background: rgba(0,0,0,0.7);
+            border: 1px solid #4cc9f0;
+            border-radius: 5px;
+        }
+        
+        .combo-counter {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(255, 215, 0, 0.2);
+            border: 1px solid #ffd700;
+            padding: 10px;
+            border-radius: 8px;
+            font-weight: bold;
+        }
+        
+        .speed-controls {
+            margin-top: 10px;
+            display: flex;
+            gap: 5px;
+            justify-content: center;
+        }
+        
+        .speed-btn {
+            padding: 5px 10px;
+            font-size: 12px;
+            min-width: 40px;
+        }
+        
+        .research-panel {
+            background: rgba(22, 33, 62, 0.9);
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 15px;
+            border: 1px solid #4cc9f0;
+        }
+        
+        .research-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 5px 0;
+            border-bottom: 1px solid rgba(76, 201, 240, 0.2);
+        }
+        
+        .research-item:last-child {
+            border-bottom: none;
+        }
+        
+        .weather-effect {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            opacity: 0.3;
+        }
+    </style>
+</head>
+<body>
+    <h1>🏰 타워 디펜스 ULTIMATE</h1>
+    
+    <div id="gameContainer">
+        <canvas id="gameCanvas" width="900" height="600"></canvas>
+        
+        <div class="mini-map" id="miniMap">
+            <canvas width="120" height="80"></canvas>
+        </div>
+        
+        <div class="combo-counter" id="comboCounter" style="display: none;">
+            🔥 콤보: <span id="comboValue">0</span>
+            <div style="font-size: 12px;">보너스: +<span id="comboBonus">0</span>%</div>
+        </div>
+        
+        <canvas class="weather-effect" id="weatherCanvas" width="900" height="600"></canvas>
+        
+        <div id="gameOver">
+            <h2 id="gameOverTitle">게임 오버!</h2>
+            <p id="gameOverMessage"></p>
+            <div id="finalStats"></div>
+            <button onclick="restartGame()">다시 시작</button>
+        </div>
+        
+        <div id="towerInfo">
+            <h3 id="towerTitle">타워 정보</h3>
+            <div id="towerStats"></div>
+            <div id="towerUpgrades"></div>
+            <button onclick="closeTowerInfo()">Close</button>
+            <button onclick="sellTower()" style="background: linear-gradient(45deg, #ff6b6b, #ee5a24); margin-left: 10px;">Sell</button>
+        </div>
+        
+        <div id="nextWaveInfo">
+            <h3>다음 웨이브 정보</h3>
+            <div id="wavePreview"></div>
+            <button onclick="closeWaveInfo()">닫기</button>
+        </div>
+    </div>
+    
+    <div id="ui">
+        <div class="stat">💰 <span id="gold">200</span></div>
+        <div class="stat">❤️ <span id="lives">30</span></div>
+        <div class="stat">🌊 <span id="wave">1</span></div>
+        <div class="stat">👹 <span id="enemiesLeft">0</span></div>
+        <div class="stat">🎯 <span id="score">0</span></div>
+        <div class="stat">💎 <span id="research">0</span></div>
+        <div class="stat">🏆 <span id="achievements">0</span></div>
+    </div>
+    
+    <div id="controls">
+        <div class="tower-btn basic-tower" onclick="selectTower('basic')">
+            🏰<br><span class="cost">30G</span>
+        </div>
+        <div class="tower-btn sniper-tower" onclick="selectTower('sniper')">
+            🎯<br><span class="cost">60G</span>
+        </div>
+        <div class="tower-btn splash-tower" onclick="selectTower('splash')">
+            💥<br><span class="cost">80G</span>
+        </div>
+        <div class="tower-btn slow-tower" onclick="selectTower('slow')">
+            🧊<br><span class="cost">50G</span>
+        </div>
+        <div class="tower-btn laser-tower" onclick="selectTower('laser')">
+            ⚡<br><span class="cost">120G</span>
+        </div>
+        <button id="startWaveBtn" onclick="startWave()">웨이브 시작</button>
+        <button onclick="pauseGame()">일시정지</button>
+        <button onclick="showWaveInfo()">웨이브 정보</button>
+    </div>
+    
+    <div class="speed-controls">
+        <button class="speed-btn" onclick="setGameSpeed(0.5)">0.5x</button>
+        <button class="speed-btn" onclick="setGameSpeed(1)" style="background: linear-gradient(45deg, #4ecdc4, #44bd87);">1x</button>
+        <button class="speed-btn" onclick="setGameSpeed(2)">2x</button>
+        <button class="speed-btn" onclick="setGameSpeed(4)">4x</button>
+    </div>
+    
+    <div id="skillBar">
+        <div class="skill-btn" style="background: linear-gradient(45deg, #ff6b6b, #ee5a24);" onclick="useSkill('bomb')" title="폭탄 (100G)">
+            💣
+            <div id="bombCooldown" class="skill-cooldown" style="display: none;"></div>
+        </div>
+        <div class="skill-btn" style="background: linear-gradient(45deg, #4ecdc4, #44bd87);" onclick="useSkill('freeze')" title="빙결 (80G)">
+            ❄️
+            <div id="freezeCooldown" class="skill-cooldown" style="display: none;"></div>
+        </div>
+        <div class="skill-btn" style="background: linear-gradient(45deg, #feca57, #ff9ff3);" onclick="useSkill('boost')" title="강화 (60G)">
+            ⚡
+            <div id="boostCooldown" class="skill-cooldown" style="display: none;"></div>
+        </div>
+        <div class="skill-btn" style="background: linear-gradient(45deg, #a8e6cf, #ffd3a5);" onclick="useSkill('storm')" title="번개 폭풍 (150G)">
+            🌩️
+            <div id="stormCooldown" class="skill-cooldown" style="display: none;"></div>
+        </div>
+    </div>
+    
+    <div class="research-panel">
+        <h4 style="margin-top: 0; color: #4cc9f0;">🔬 연구 업그레이드</h4>
+        <div class="research-item">
+            <span>💰 골드 보너스 (+20%)</span>
+            <button onclick="buyResearch('goldBonus')" id="goldBonusBtn">50💎</button>
+        </div>
+        <div class="research-item">
+            <span>❤️ 라이프 증가 (+10)</span>
+            <button onclick="buyResearch('moreLife')" id="moreLifeBtn">40💎</button>
+        </div>
+        <div class="research-item">
+            <span>🏰 타워 데미지 (+25%)</span>
+            <button onclick="buyResearch('towerDamage')" id="towerDamageBtn">60💎</button>
+        </div>
+        <div class="research-item">
+            <span>⚡ 타워 속도 (+30%)</span>
+            <button onclick="buyResearch('towerSpeed')" id="towerSpeedBtn">80💎</button>
+        </div>
+    </div>
+
+    <div class="achievement" id="achievementNotification"></div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const miniMapCanvas = document.querySelector('.mini-map canvas');
+        const miniMapCtx = miniMapCanvas.getContext('2d');
+        const weatherCanvas = document.getElementById('weatherCanvas');
+        const weatherCtx = weatherCanvas.getContext('2d');
+        
+        // 오디오 컨텍스트
+        let audioContext;
+        function initAudio() {
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+        
+        function playSound(frequency, duration, type = 'sine', volume = 0.1) {
+            if (!audioContext) return;
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.value = frequency;
+            oscillator.type = type;
+            
+            gainNode.gain.setValueAtTime(volume, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + duration);
+        }
+        
+        // 게임 상태 (연구 시스템 수정)
+        let gameState = {
+            gold: 200,
+            lives: 30,
+            wave: 1,
+            score: 0,
+            research: 0, // 연구 포인트 (숫자)
+            achievements: 0,
+            selectedTool: null,
+            selectedTower: null,
+            paused: false,
+            gameOver: false,
+            gameSpeed: 1,
+            combo: 0,
+            maxCombo: 0,
+            comboTimer: 0,
+            weather: 'clear',
+            weatherTimer: 0,
+            totalKills: 0,
+            totalDamage: 0,
+            towersBuilt: 0,
+            skills: {
+                bomb: { cooldown: 0, cost: 100 },
+                freeze: { cooldown: 0, cost: 80 },
+                boost: { cooldown: 0, cost: 60 },
+                storm: { cooldown: 0, cost: 150 }
+            },
+            researchUpgrades: { // 연구 업그레이드 상태 (별도 객체)
+                goldBonus: false,
+                moreLife: false,
+                towerDamage: false,
+                towerSpeed: false
+            },
+            achievementsList: [
+                { id: 'firstTower', name: '첫 타워', desc: '타워를 처음 건설하세요', unlocked: false },
+                { id: 'wave10', name: '생존자', desc: '웨이브 10에 도달하세요', unlocked: false },
+                { id: 'combo50', name: '콤보 마스터', desc: '50 콤보를 달성하세요', unlocked: false },
+                { id: 'kill1000', name: '학살자', desc: '적 1000마리를 처치하세요', unlocked: false },
+                { id: 'noLife', name: '완벽한 방어', desc: '라이프를 하나도 잃지 않고 웨이브 5를 클리어하세요', unlocked: false }
+            ]
+        };
+        
+        // 다양한 맵 경로 정의
+        const mapPaths = {
+            forest: [ // 기본 숲 맵
+                {x: 0, y: 300},
+                {x: 150, y: 300},
+                {x: 150, y: 200},
+                {x: 300, y: 200},
+                {x: 300, y: 400},
+                {x: 500, y: 400},
+                {x: 500, y: 150},
+                {x: 700, y: 150},
+                {x: 700, y: 350},
+                {x: 900, y: 350}
+            ],
+            desert: [ // 사막 맵 (직선적)
+                {x: 0, y: 250},
+                {x: 200, y: 250},
+                {x: 200, y: 450},
+                {x: 400, y: 450},
+                {x: 400, y: 150},
+                {x: 600, y: 150},
+                {x: 600, y: 350},
+                {x: 800, y: 350},
+                {x: 800, y: 200},
+                {x: 900, y: 200}
+            ],
+            mountain: [ // 산악 맵 (구불구불)
+                {x: 0, y: 400},
+                {x: 100, y: 350},
+                {x: 200, y: 250},
+                {x: 350, y: 200},
+                {x: 450, y: 300},
+                {x: 550, y: 250},
+                {x: 650, y: 350},
+                {x: 750, y: 300},
+                {x: 850, y: 250},
+                {x: 900, y: 200}
+            ],
+            swamp: [ // 늪지 맵 (복잡한 경로)
+                {x: 0, y: 200},
+                {x: 120, y: 200},
+                {x: 120, y: 400},
+                {x: 250, y: 400},
+                {x: 250, y: 100},
+                {x: 400, y: 100},
+                {x: 400, y: 350},
+                {x: 550, y: 350},
+                {x: 550, y: 150},
+                {x: 700, y: 150},
+                {x: 700, y: 450},
+                {x: 900, y: 450}
+            ],
+            ice: [ // 얼음 맵 (긴 직선 구간)
+                {x: 0, y: 150},
+                {x: 300, y: 150},
+                {x: 300, y: 350},
+                {x: 600, y: 350},
+                {x: 600, y: 250},
+                {x: 900, y: 250}
+            ]
+        };
+        
+        // 맵 테마별 배경색과 특성
+        const mapThemes = {
+            forest: {
+                name: '숲',
+                backgroundColor: 'linear-gradient(45deg, #2d5016, #3a5f1f)',
+                pathColor: 'rgba(139, 69, 19, 0.3)',
+                treeTypes: ['tree', 'bush'],
+                treeColors: ['#228B22', '#32CD32', '#90EE90'],
+                treeCount: 40
+            },
+            desert: {
+                name: '사막',
+                backgroundColor: 'linear-gradient(45deg, #daa520, #f4a460)',
+                pathColor: 'rgba(160, 82, 45, 0.4)',
+                treeTypes: ['cactus', 'rock'],
+                treeColors: ['#9acd32', '#8fbc8f', '#daa520'],
+                treeCount: 25
+            },
+            mountain: {
+                name: '산악',
+                backgroundColor: 'linear-gradient(45deg, #696969, #2f4f4f)',
+                pathColor: 'rgba(105, 105, 105, 0.4)',
+                treeTypes: ['rock', 'pine'],
+                treeColors: ['#708090', '#2f4f4f', '#556b2f'],
+                treeCount: 30
+            },
+            swamp: {
+                name: '늪지',
+                backgroundColor: 'linear-gradient(45deg, #2f4f2f, #556b2f)',
+                pathColor: 'rgba(85, 107, 47, 0.4)',
+                treeTypes: ['swamptree', 'bush'],
+                treeColors: ['#6b8e23', '#9acd32', '#8fbc8f'],
+                treeCount: 35
+            },
+            ice: {
+                name: '얼음',
+                backgroundColor: 'linear-gradient(45deg, #b0e0e6, #87ceeb)',
+                pathColor: 'rgba(135, 206, 235, 0.3)',
+                treeTypes: ['icetree', 'crystal'],
+                treeColors: ['#e0ffff', '#f0f8ff', '#87ceeb'],
+                treeCount: 20
+            }
+        };
+        
+        // 현재 맵 정보
+        let currentMap = 'forest';
+        let path = mapPaths.forest;
+        
+        // 맵 변경 함수
+        function changeMap() {
+            let mapIndex = Math.floor((gameState.wave - 1) / 5);
+            let mapNames = Object.keys(mapPaths);
+            currentMap = mapNames[mapIndex % mapNames.length];
+            path = mapPaths[currentMap];
+            
+            // 배경색 변경
+            let theme = mapThemes[currentMap];
+            canvas.style.background = theme.backgroundColor;
+            
+            // 나무들 다시 생성 (새로운 맵에 맞게)
+            generateBackgroundTrees();
+            
+            // 맵 변경 알림
+            showMapChangeNotification(theme.name);
+        }
+        
+        // 맵 변경 알림
+        function showMapChangeNotification(mapName) {
+            let notification = document.getElementById('achievementNotification');
+            notification.innerHTML = `
+                <div style="font-size: 18px;">🗺️ 새로운 지역!</div>
+                <div style="font-size: 14px; margin-top: 5px;">${mapName} 지역 진입</div>
+                <div style="font-size: 12px; opacity: 0.8;">새로운 전장에서 계속 전투하세요!</div>
+            `;
+            notification.style.background = 'linear-gradient(45deg, #32cd32, #90ee90)';
+            notification.classList.add('show');
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+                notification.style.background = 'linear-gradient(45deg, #ffd700, #ffed4a)';
+            }, 4000);
+            
+            playSound(800, 1, 'sine', 0.1);
+        }
+        
+        // 게임 객체들
+        let towers = [];
+        let enemies = [];
+        let projectiles = [];
+        let particles = [];
+        let effects = [];
+        let damageNumbers = [];
+        let weatherParticles = [];
+        
+        // 웨이브 관리
+        let currentWave = [];
+        let waveStarted = false;
+        let enemiesSpawned = 0;
+        let spawnTimer = 0;
+        
+        // 타워 타입 정의 (한국어로 복원)
+        const towerTypes = {
+            basic: {
+                cost: 30,
+                damage: 25,
+                range: 100,
+                fireRate: 60,
+                projectileSpeed: 8,
+                color: '#4cc9f0',
+                name: '기본 타워',
+                upgrades: [
+                    { cost: 40, damage: 15, range: 20, fireRate: -10 },
+                    { cost: 80, damage: 25, range: 30, fireRate: -15 }
+                ]
+            },
+            sniper: {
+                cost: 60,
+                damage: 120,
+                range: 220,
+                fireRate: 120,
+                projectileSpeed: 20,
+                color: '#ff6b6b',
+                name: '저격 타워',
+                upgrades: [
+                    { cost: 80, damage: 60, range: 50, fireRate: -20 },
+                    { cost: 150, damage: 100, range: 100, fireRate: -30 }
+                ]
+            },
+            splash: {
+                cost: 80,
+                damage: 45,
+                range: 90,
+                fireRate: 90,
+                projectileSpeed: 6,
+                splashRadius: 60,
+                color: '#feca57',
+                name: '스플래시 타워',
+                upgrades: [
+                    { cost: 100, damage: 30, splashRadius: 25, fireRate: -15 },
+                    { cost: 200, damage: 50, splashRadius: 35, fireRate: -25 }
+                ]
+            },
+            slow: {
+                cost: 50,
+                damage: 20,
+                range: 85,
+                fireRate: 45,
+                projectileSpeed: 12,
+                slowEffect: 0.4,
+                slowDuration: 180,
+                color: '#4ecdc4',
+                name: '빙결 타워',
+                upgrades: [
+                    { cost: 60, slowEffect: -0.15, slowDuration: 60, range: 25 },
+                    { cost: 120, slowEffect: -0.2, slowDuration: 120, damage: 30 }
+                ]
+            },
+            laser: {
+                cost: 120,
+                damage: 15,
+                range: 130,
+                fireRate: 5,
+                projectileSpeed: 30,
+                piercing: 3,
+                color: '#a8e6cf',
+                name: '레이저 타워',
+                upgrades: [
+                    { cost: 150, damage: 10, piercing: 2, fireRate: -1 },
+                    { cost: 300, damage: 20, piercing: 5, range: 50 }
+                ]
+            }
+        };
+        
+        // 데미지 숫자 표시 클래스
+        class DamageNumber {
+            constructor(x, y, damage, critical = false) {
+                this.x = x + (Math.random() - 0.5) * 20;
+                this.y = y;
+                this.damage = damage;
+                this.critical = critical;
+                this.life = 60;
+                this.vy = -2;
+            }
+            
+            update() {
+                this.y += this.vy;
+                this.life--;
+                
+                if (this.life <= 0) {
+                    let index = damageNumbers.indexOf(this);
+                    if (index > -1) {
+                        damageNumbers.splice(index, 1);
+                    }
+                }
+            }
+            
+            draw() {
+                let alpha = this.life / 60;
+                ctx.fillStyle = this.critical ? 
+                    `rgba(255, 215, 0, ${alpha})` : 
+                    `rgba(255, 100, 100, ${alpha})`;
+                ctx.font = this.critical ? 'bold 18px Arial' : 'bold 14px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText(Math.round(this.damage), this.x, this.y);
+            }
+        }
+        
+        // 향상된 타워 클래스
+        class Tower {
+            constructor(x, y, type) {
+                this.x = x;
+                this.y = y;
+                this.type = type;
+                this.level = 1;
+                this.lastFired = 0;
+                this.target = null;
+                this.boostTimer = 0;
+                this.kills = 0;
+                this.totalDamage = 0;
+                
+                const baseStats = towerTypes[type];
+                this.range = baseStats.range;
+                this.damage = baseStats.damage;
+                this.fireRate = baseStats.fireRate;
+                this.projectileSpeed = baseStats.projectileSpeed;
+                this.color = baseStats.color;
+                this.splashRadius = baseStats.splashRadius || 0;
+                this.slowEffect = baseStats.slowEffect || 0;
+                this.slowDuration = baseStats.slowDuration || 0;
+                this.piercing = baseStats.piercing || 0;
+                
+                // 연구 보너스 적용 (수정됨)
+                if (gameState.researchUpgrades && gameState.researchUpgrades.towerDamage) {
+                    this.damage *= 1.25;
+                }
+                if (gameState.researchUpgrades && gameState.researchUpgrades.towerSpeed) {
+                    this.fireRate *= 0.7;
+                }
+            }
+            
+            update() {
+                this.lastFired++;
+                if (this.boostTimer > 0) {
+                    this.boostTimer--;
+                }
+                
+                this.findTarget();
+                let currentFireRate = this.boostTimer > 0 ? this.fireRate * 0.4 : this.fireRate;
+                currentFireRate /= gameState.gameSpeed;
+                
+                if (this.target && this.lastFired >= currentFireRate) {
+                    this.fire();
+                    this.lastFired = 0;
+                }
+            }
+            
+            findTarget() {
+                this.target = null;
+                let bestScore = -1;
+                
+                for (let enemy of enemies) {
+                    let distance = Math.sqrt((enemy.x - this.x) ** 2 + (enemy.y - this.y) ** 2);
+                    if (distance <= this.range) {
+                        // 타겟팅 우선순위: 진행도 + 체력 비율
+                        let progress = enemy.pathIndex / path.length;
+                        let healthRatio = enemy.hp / enemy.maxHp;
+                        let score = progress * 100 + (1 - healthRatio) * 50;
+                        
+                        if (score > bestScore) {
+                            this.target = enemy;
+                            bestScore = score;
+                        }
+                    }
+                }
+            }
+            
+            fire() {
+                if (this.target) {
+                    let damage = this.boostTimer > 0 ? this.damage * 1.8 : this.damage;
+                    
+                    // 날씨 효과
+                    if (gameState.weather === 'storm') {
+                        damage *= 1.2;
+                    } else if (gameState.weather === 'fog') {
+                        damage *= 0.8;
+                    }
+                    
+                    // 크리티컬 히트 (10% 확률로 2배 데미지)
+                    let critical = Math.random() < 0.1;
+                    if (critical) {
+                        damage *= 2;
+                    }
+                    
+                    projectiles.push(new Projectile(this.x, this.y, this.target, damage, this.type, this, critical));
+                    playSound(800 + Math.random() * 200, 0.1, 'square', 0.05);
+                }
+            }
+            
+            upgrade() {
+                const towerData = towerTypes[this.type];
+                if (this.level <= towerData.upgrades.length) {
+                    const upgrade = towerData.upgrades[this.level - 1];
+                    if (gameState.gold >= upgrade.cost) {
+                        gameState.gold -= upgrade.cost;
+                        
+                        this.damage += upgrade.damage || 0;
+                        this.range += upgrade.range || 0;
+                        this.fireRate += upgrade.fireRate || 0;
+                        this.splashRadius += upgrade.splashRadius || 0;
+                        this.slowEffect += upgrade.slowEffect || 0;
+                        this.slowDuration += upgrade.slowDuration || 0;
+                        this.piercing += upgrade.piercing || 0;
+                        
+                        this.level++;
+                        playSound(1200, 0.3, 'sine');
+                        return true;
+                    }
+                }
+                return false;
+            }
+            
+            getSellValue() {
+                let value = towerTypes[this.type].cost * 0.8;
+                for (let i = 0; i < this.level - 1; i++) {
+                    value += towerTypes[this.type].upgrades[i].cost * 0.8;
+                }
+                return Math.floor(value);
+            }
+            
+            draw() {
+                // 타워 기본 모양
+                ctx.fillStyle = this.color;
+                ctx.fillRect(this.x - 15, this.y - 15, 30, 30);
+                
+                // 업그레이드 레벨 표시
+                for (let i = 0; i < this.level - 1; i++) {
+                    ctx.fillStyle = '#ffd700';
+                    ctx.fillRect(this.x - 12 + i * 8, this.y - 20, 6, 3);
+                }
+                
+                // 킬 수 표시 (10킬 이상일 때)
+                if (this.kills >= 10) {
+                    ctx.fillStyle = '#ff6b6b';
+                    ctx.font = 'bold 10px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(this.kills, this.x, this.y - 25);
+                }
+                
+                // 타워 포탑
+                ctx.fillStyle = this.boostTimer > 0 ? '#ffd700' : '#7209b7';
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, 12, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // 부스트 효과 표시
+                if (this.boostTimer > 0) {
+                    ctx.strokeStyle = '#ffd700';
+                    ctx.lineWidth = 2;
+                    ctx.setLineDash([5, 5]);
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, 20, 0, Math.PI * 2);
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+                    ctx.lineWidth = 1;
+                }
+                
+                // 타입별 아이콘
+                ctx.fillStyle = 'white';
+                ctx.font = '16px Arial';
+                ctx.textAlign = 'center';
+                let icon = this.type === 'sniper' ? '🎯' : 
+                          this.type === 'splash' ? '💥' : 
+                          this.type === 'slow' ? '🧊' :
+                          this.type === 'laser' ? '⚡' : '🏰';
+                ctx.fillText(icon, this.x, this.y + 5);
+                
+                // 선택된 타워 사거리 표시
+                if (gameState.selectedTower === this) {
+                    ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
+                    ctx.setLineDash([8, 8]);
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, this.range, 0, Math.PI * 2);
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+                    ctx.lineWidth = 1;
+                }
+                
+                // 배치 중인 타워의 사거리 표시
+                if (gameState.selectedTool && gameState.selectedTool !== 'sell') {
+                    let mousePos = getMousePos();
+                    if (mousePos && towerTypes[gameState.selectedTool]) {
+                        ctx.strokeStyle = 'rgba(76, 201, 240, 0.4)';
+                        ctx.setLineDash([5, 5]);
+                        ctx.beginPath();
+                        ctx.arc(mousePos.x, mousePos.y, towerTypes[gameState.selectedTool].range, 0, Math.PI * 2);
+                        ctx.stroke();
+                        ctx.setLineDash([]);
+                    }
+                }
+            }
+        }
+        
+        // 향상된 적 클래스
+        class Enemy {
+            constructor(type = 'basic') {
+                this.x = path[0].x;
+                this.y = path[0].y;
+                this.pathIndex = 0;
+                this.maxHp = 120;
+                this.hp = this.maxHp;
+                this.reward = 18;
+                this.researchReward = 1;
+                this.size = 15;
+                this.baseSpeed = 1.2 + Math.random() * 0.4;
+                this.speed = this.baseSpeed;
+                this.slowTimer = 0;
+                this.frozen = false;
+                this.armor = 0;
+                this.regeneration = 0;
+                this.shield = 0;
+                this.maxShield = 0;
+                
+                if (type === 'strong') {
+                    this.maxHp = 250;
+                    this.hp = 250;
+                    this.reward = 35;
+                    this.researchReward = 2;
+                    this.baseSpeed *= 0.75;
+                    this.speed = this.baseSpeed;
+                    this.size = 20;
+                    this.armor = 5;
+                } else if (type === 'fast') {
+                    this.maxHp = 80;
+                    this.hp = 80;
+                    this.reward = 25;
+                    this.researchReward = 2;
+                    this.baseSpeed *= 2.2;
+                    this.speed = this.baseSpeed;
+                    this.size = 12;
+                } else if (type === 'boss') {
+                    this.maxHp = 800;
+                    this.hp = 800;
+                    this.reward = 150;
+                    this.researchReward = 10;
+                    this.baseSpeed *= 0.5;
+                    this.speed = this.baseSpeed;
+                    this.size = 35;
+                    this.armor = 15;
+                    this.regeneration = 2;
+                } else if (type === 'shielded') {
+                    this.maxHp = 150;
+                    this.hp = 150;
+                    this.shield = 100;
+                    this.maxShield = 100;
+                    this.reward = 40;
+                    this.researchReward = 3;
+                    this.baseSpeed *= 0.9;
+                    this.speed = this.baseSpeed;
+                    this.size = 18;
+                } else if (type === 'flying') {
+                    this.maxHp = 100;
+                    this.hp = 100;
+                    this.reward = 30;
+                    this.researchReward = 2;
+                    this.baseSpeed *= 1.5;
+                    this.speed = this.baseSpeed;
+                    this.size = 14;
+                    this.flying = true;
+                }
+                
+                this.type = type;
+            }
+            
+            update() {
+                // 재생 효과
+                if (this.regeneration > 0 && this.hp < this.maxHp) {
+                    this.hp = Math.min(this.maxHp, this.hp + this.regeneration / 60);
+                }
+                
+                // 슬로우 효과 처리
+                if (this.slowTimer > 0) {
+                    this.slowTimer--;
+                    if (this.slowTimer === 0) {
+                        this.speed = this.baseSpeed;
+                        this.frozen = false;
+                    }
+                }
+                
+                // 빙결 상태면 움직이지 않음
+                if (this.frozen) return;
+                
+                // 실제 속도에 게임 속도 적용
+                let actualSpeed = this.speed * gameState.gameSpeed;
+                
+                if (this.pathIndex < path.length - 1) {
+                    let target = path[this.pathIndex + 1];
+                    let dx = target.x - this.x;
+                    let dy = target.y - this.y;
+                    let distance = Math.sqrt(dx * dx + dy * dy);
+                    
+                    if (distance < 8) {
+                        this.pathIndex++;
+                    } else {
+                        this.x += (dx / distance) * actualSpeed;
+                        this.y += (dy / distance) * actualSpeed;
+                    }
+                } else {
+                    // 적이 끝까지 도달
+                    gameState.lives--;
+                    this.remove();
+                    playSound(300, 0.5, 'sawtooth');
+                    
+                    // 콤보 리셋
+                    gameState.combo = 0;
+                    gameState.comboTimer = 0;
+                }
+            }
+            
+            takeDamage(damage, tower = null, critical = false) {
+                // 아머 계산
+                let actualDamage = Math.max(1, damage - this.armor);
+                
+                // 쉴드 먼저 깎기
+                if (this.shield > 0) {
+                    let shieldDamage = Math.min(this.shield, actualDamage);
+                    this.shield -= shieldDamage;
+                    actualDamage -= shieldDamage;
+                }
+                
+                // 체력 깎기
+                if (actualDamage > 0) {
+                    this.hp -= actualDamage;
+                }
+                
+                // 데미지 숫자 표시
+                damageNumbers.push(new DamageNumber(this.x, this.y - this.size, damage, critical));
+                
+                if (tower) {
+                    tower.totalDamage += damage;
+                }
+                
+                gameState.totalDamage += damage;
+                
+                if (this.hp <= 0) {
+                    // 리워드 계산
+                    let goldReward = this.reward;
+                    let researchReward = this.researchReward;
+                    
+                    // 콤보 보너스
+                    let comboBonus = Math.floor(gameState.combo / 10) * 0.1;
+                    goldReward = Math.floor(goldReward * (1 + comboBonus));
+                    
+                    // 연구 보너스 적용 (수정됨)
+                    if (gameState.researchUpgrades && gameState.researchUpgrades.goldBonus) {
+                        goldReward = Math.floor(goldReward * 1.2);
+                    }
+                    
+                    gameState.gold += goldReward;
+                    gameState.research += researchReward;
+                    gameState.score += this.reward * 3;
+                    gameState.totalKills++;
+                    
+                    if (tower) {
+                        tower.kills++;
+                    }
+                    
+                    // 콤보 증가
+                    gameState.combo++;
+                    gameState.comboTimer = 300; // 5초
+                    if (gameState.combo > gameState.maxCombo) {
+                        gameState.maxCombo = gameState.combo;
+                    }
+                    
+                    this.remove();
+                    
+                    // 폭발 효과
+                    for (let i = 0; i < 12; i++) {
+                        particles.push(new Particle(this.x, this.y, this.type));
+                    }
+                    
+                    playSound(600 + Math.random() * 400, 0.2, 'square', 0.05);
+                    
+                    // 도전과제 확인
+                    checkAchievements();
+                }
+            }
+            
+            applySlow(effect, duration) {
+                this.speed = this.baseSpeed * effect;
+                this.slowTimer = duration;
+                if (effect <= 0.1) {
+                    this.frozen = true;
+                }
+            }
+            
+            remove() {
+                let index = enemies.indexOf(this);
+                if (index > -1) {
+                    enemies.splice(index, 1);
+                }
+            }
+            
+            draw() {
+                // 적 본체
+                let color = this.type === 'strong' ? '#ff6b6b' : 
+                           this.type === 'fast' ? '#4ecdc4' :
+                           this.type === 'boss' ? '#7209b7' :
+                           this.type === 'shielded' ? '#feca57' :
+                           this.type === 'flying' ? '#a8e6cf' : '#ff9f43';
+                
+                if (this.frozen) {
+                    color = '#87ceeb';
+                }
+                
+                // 비행 유닛 그림자
+                if (this.flying) {
+                    ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+                    ctx.beginPath();
+                    ctx.ellipse(this.x, this.y + this.size + 5, this.size * 0.8, this.size * 0.4, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                
+                ctx.fillStyle = color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y - (this.flying ? 10 : 0), this.size, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // 보스 특별 효과
+                if (this.type === 'boss') {
+                    ctx.strokeStyle = '#ffd700';
+                    ctx.lineWidth = 3;
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y - (this.flying ? 10 : 0), this.size + 8, 0, Math.PI * 2);
+                    ctx.stroke();
+                    ctx.lineWidth = 1;
+                }
+                
+                // 쉴드 표시
+                if (this.shield > 0) {
+                    ctx.strokeStyle = '#00bfff';
+                    ctx.lineWidth = 3;
+                    ctx.setLineDash([4, 4]);
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y - (this.flying ? 10 : 0), this.size + 5, 0, Math.PI * 2);
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+                    ctx.lineWidth = 1;
+                }
+                
+                // HP 바
+                let barWidth = this.size * 2.8;
+                let barHeight = 5;
+                let hpPercent = this.hp / this.maxHp;
+                let yOffset = this.flying ? 10 : 0;
+                
+                // 배경
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+                ctx.fillRect(this.x - barWidth / 2, this.y - this.size - 15 - yOffset, barWidth, barHeight);
+                
+                // HP 바
+                ctx.fillStyle = hpPercent > 0.6 ? '#4ecdc4' : hpPercent > 0.3 ? '#feca57' : '#ff6b6b';
+                ctx.fillRect(this.x - barWidth / 2, this.y - this.size - 15 - yOffset, barWidth * hpPercent, barHeight);
+                
+                // 쉴드 바
+                if (this.maxShield > 0) {
+                    let shieldPercent = this.shield / this.maxShield;
+                    ctx.fillStyle = '#00bfff';
+                    ctx.fillRect(this.x - barWidth / 2, this.y - this.size - 20 - yOffset, barWidth * shieldPercent, 3);
+                }
+                
+                // 슬로우 효과 표시
+                if (this.slowTimer > 0 && !this.frozen) {
+                    ctx.fillStyle = 'rgba(76, 201, 240, 0.3)';
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y - (this.flying ? 10 : 0), this.size + 8, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+        }
+        
+        // 향상된 투사체 클래스
+        class Projectile {
+            constructor(x, y, target, damage, type, tower, critical = false) {
+                this.x = x;
+                this.y = y;
+                this.target = target;
+                this.damage = damage;
+                this.type = type;
+                this.tower = tower;
+                this.critical = critical;
+                this.speed = tower.projectileSpeed * gameState.gameSpeed;
+                this.pierceCount = 0;
+                this.hitTargets = [];
+            }
+            
+            update() {
+                if (!this.target || enemies.indexOf(this.target) === -1) {
+                    if (this.type === 'laser' && this.pierceCount < this.tower.piercing) {
+                        // 레이저는 다음 타겟을 찾음
+                        this.findNextTarget();
+                    } else {
+                        this.remove();
+                        return;
+                    }
+                }
+                
+                if (this.target) {
+                    let dx = this.target.x - this.x;
+                    let dy = this.target.y - this.y;
+                    let distance = Math.sqrt(dx * dx + dy * dy);
+                    
+                    if (distance < 15) {
+                        this.hit();
+                    } else {
+                        this.x += (dx / distance) * this.speed;
+                        this.y += (dy / distance) * this.speed;
+                    }
+                }
+            }
+            
+            findNextTarget() {
+                for (let enemy of enemies) {
+                    if (!this.hitTargets.includes(enemy)) {
+                        let distance = Math.sqrt((enemy.x - this.x) ** 2 + (enemy.y - this.y) ** 2);
+                        if (distance <= 100) {
+                            this.target = enemy;
+                            return;
+                        }
+                    }
+                }
+                this.remove();
+            }
+            
+            hit() {
+                if (this.type === 'splash') {
+                    // 스플래시 데미지
+                    for (let enemy of enemies) {
+                        let distance = Math.sqrt((enemy.x - this.target.x) ** 2 + (enemy.y - this.target.y) ** 2);
+                        if (distance <= this.tower.splashRadius) {
+                            let splashDamage = distance <= 25 ? this.damage : this.damage * 0.6;
+                            enemy.takeDamage(splashDamage, this.tower, this.critical && distance <= 25);
+                        }
+                    }
+                    // 폭발 효과
+                    effects.push(new Explosion(this.target.x, this.target.y, this.tower.splashRadius));
+                } else {
+                    this.target.takeDamage(this.damage, this.tower, this.critical);
+                    
+                    // 레이저 관통 효과
+                    if (this.type === 'laser' && this.pierceCount < this.tower.piercing) {
+                        this.hitTargets.push(this.target);
+                        this.pierceCount++;
+                        this.damage *= 0.8; // 관통할 때마다 데미지 감소
+                        this.findNextTarget();
+                        return;
+                    }
+                }
+                
+                // 슬로우 효과
+                if (this.tower.slowEffect > 0) {
+                    this.target.applySlow(this.tower.slowEffect, this.tower.slowDuration);
+                }
+                
+                this.remove();
+            }
+            
+            remove() {
+                let index = projectiles.indexOf(this);
+                if (index > -1) {
+                    projectiles.splice(index, 1);
+                }
+            }
+            
+            draw() {
+                let color = this.type === 'sniper' ? '#ff6b6b' :
+                           this.type === 'splash' ? '#feca57' :
+                           this.type === 'slow' ? '#4ecdc4' :
+                           this.type === 'laser' ? '#a8e6cf' : '#feca57';
+                
+                if (this.critical) {
+                    color = '#ffd700';
+                }
+                
+                if (this.type === 'laser') {
+                    // 레이저 빔 효과
+                    ctx.strokeStyle = color;
+                    ctx.lineWidth = 4;
+                    ctx.beginPath();
+                    ctx.moveTo(this.tower.x, this.tower.y);
+                    ctx.lineTo(this.x, this.y);
+                    ctx.stroke();
+                    ctx.lineWidth = 1;
+                }
+                
+                ctx.fillStyle = color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.critical ? 6 : 4, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // 투사체 꼬리 효과
+                if (this.critical) {
+                    ctx.shadowColor = color;
+                    ctx.shadowBlur = 15;
+                    ctx.fill();
+                    ctx.shadowBlur = 0;
+                }
+            }
+        }
+        
+        // 날씨 효과 시스템
+        function updateWeather() {
+            gameState.weatherTimer++;
+            
+            // 5분마다 날씨 변경
+            if (gameState.weatherTimer >= 3600) {
+                let weathers = ['clear', 'rain', 'storm', 'fog', 'snow'];
+                gameState.weather = weathers[Math.floor(Math.random() * weathers.length)];
+                gameState.weatherTimer = 0;
+                
+                // 날씨 파티클 초기화
+                weatherParticles = [];
+                for (let i = 0; i < 50; i++) {
+                    weatherParticles.push(createWeatherParticle());
+                }
+            }
+            
+            // 날씨 파티클 업데이트
+            weatherParticles.forEach(particle => {
+                particle.update();
+                if (particle.y > canvas.height || particle.life <= 0) {
+                    let index = weatherParticles.indexOf(particle);
+                    weatherParticles[index] = createWeatherParticle();
+                }
+            });
+        }
+        
+        function createWeatherParticle() {
+            return {
+                x: Math.random() * canvas.width,
+                y: -10,
+                vx: (Math.random() - 0.5) * 2,
+                vy: 2 + Math.random() * 3,
+                life: 300,
+                update() {
+                    this.x += this.vx;
+                    this.y += this.vy;
+                    this.life--;
+                }
+            };
+        }
+        
+        function drawWeather() {
+            if (gameState.weather === 'clear') return;
+            
+            weatherCtx.clearRect(0, 0, weatherCanvas.width, weatherCanvas.height);
+            
+            weatherParticles.forEach(particle => {
+                if (gameState.weather === 'rain') {
+                    weatherCtx.strokeStyle = 'rgba(100, 150, 255, 0.6)';
+                    weatherCtx.lineWidth = 1;
+                    weatherCtx.beginPath();
+                    weatherCtx.moveTo(particle.x, particle.y);
+                    weatherCtx.lineTo(particle.x - particle.vx * 5, particle.y - particle.vy * 5);
+                    weatherCtx.stroke();
+                } else if (gameState.weather === 'snow') {
+                    weatherCtx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+                    weatherCtx.beginPath();
+                    weatherCtx.arc(particle.x, particle.y, 2, 0, Math.PI * 2);
+                    weatherCtx.fill();
+                } else if (gameState.weather === 'fog') {
+                    weatherCtx.fillStyle = 'rgba(200, 200, 200, 0.1)';
+                    weatherCtx.beginPath();
+                    weatherCtx.arc(particle.x, particle.y, 20, 0, Math.PI * 2);
+                    weatherCtx.fill();
+                }
+            });
+        }
+        
+        // 콤보 시스템 업데이트
+        function updateCombo() {
+            if (gameState.comboTimer > 0) {
+                gameState.comboTimer--;
+                if (gameState.comboTimer === 0) {
+                    gameState.combo = 0;
+                }
+            }
+            
+            // 콤보 UI 표시
+            let comboElement = document.getElementById('comboCounter');
+            if (gameState.combo >= 5) {
+                comboElement.style.display = 'block';
+                document.getElementById('comboValue').textContent = gameState.combo;
+                document.getElementById('comboBonus').textContent = Math.floor(gameState.combo / 10) * 10;
+            } else {
+                comboElement.style.display = 'none';
+            }
+        }
+        
+        // 도전과제 시스템
+        function checkAchievements() {
+            gameState.achievementsList.forEach(achievement => {
+                if (achievement.unlocked) return;
+                
+                let unlock = false;
+                switch (achievement.id) {
+                    case 'firstTower':
+                        unlock = gameState.towersBuilt >= 1;
+                        break;
+                    case 'wave10':
+                        unlock = gameState.wave >= 10;
+                        break;
+                    case 'combo50':
+                        unlock = gameState.maxCombo >= 50;
+                        break;
+                    case 'kill1000':
+                        unlock = gameState.totalKills >= 1000;
+                        break;
+                    case 'noLife':
+                        unlock = gameState.wave >= 5 && gameState.lives === 30;
+                        break;
+                }
+                
+                if (unlock) {
+                    achievement.unlocked = true;
+                    gameState.achievements++;
+                    showAchievement(achievement);
+                    playSound(1500, 0.8, 'sine');
+                }
+            });
+        }
+        
+        function showAchievement(achievement) {
+            let notification = document.getElementById('achievementNotification');
+            notification.innerHTML = `
+                <div style="font-size: 18px;">🏆 도전과제 달성!</div>
+                <div style="font-size: 14px; margin-top: 5px;">${achievement.name}</div>
+                <div style="font-size: 12px; opacity: 0.8;">${achievement.desc}</div>
+            `;
+            notification.classList.add('show');
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 4000);
+        }
+        
+        // 연구 시스템 (수정됨)
+        function buyResearch(type) {
+            const costs = {
+                goldBonus: 50,
+                moreLife: 40,
+                towerDamage: 60,
+                towerSpeed: 80
+            };
+            
+            // gameState.research는 연구 포인트를 저장하는 숫자값
+            // gameState.researchUpgrades는 업그레이드 상태를 저장하는 객체
+            if (!gameState.researchUpgrades) {
+                gameState.researchUpgrades = {
+                    goldBonus: false,
+                    moreLife: false,
+                    towerDamage: false,
+                    towerSpeed: false
+                };
+            }
+            
+            if (gameState.research >= costs[type] && !gameState.researchUpgrades[type]) {
+                gameState.research -= costs[type];
+                gameState.researchUpgrades[type] = true;
+                
+                // 즉시 효과 적용
+                if (type === 'moreLife') {
+                    gameState.lives += 10;
+                } else if (type === 'towerDamage') {
+                    towers.forEach(tower => tower.damage *= 1.25);
+                } else if (type === 'towerSpeed') {
+                    towers.forEach(tower => tower.fireRate *= 0.7);
+                }
+                
+                document.getElementById(type + 'Btn').disabled = true;
+                document.getElementById(type + 'Btn').textContent = '구매완료';
+                document.getElementById(type + 'Btn').style.background = '#555';
+                playSound(1200, 0.5, 'sine');
+            }
+        }
+        
+        // 게임 속도 조절
+        function setGameSpeed(speed) {
+            gameState.gameSpeed = speed;
+            document.querySelectorAll('.speed-btn').forEach(btn => {
+                btn.style.background = 'linear-gradient(45deg, #7209b7, #4cc9f0)';
+            });
+            event.target.style.background = 'linear-gradient(45deg, #4ecdc4, #44bd87)';
+        }
+        
+        // 미니맵 그리기
+        function drawMiniMap() {
+            miniMapCtx.clearRect(0, 0, 120, 80);
+            
+            // 배경
+            miniMapCtx.fillStyle = 'rgba(22, 33, 62, 0.8)';
+            miniMapCtx.fillRect(0, 0, 120, 80);
+            
+            // 경로
+            miniMapCtx.strokeStyle = '#4cc9f0';
+            miniMapCtx.lineWidth = 2;
+            miniMapCtx.beginPath();
+            for (let i = 0; i < path.length; i++) {
+                let x = (path[i].x / canvas.width) * 120;
+                let y = (path[i].y / canvas.height) * 80;
+                if (i === 0) {
+                    miniMapCtx.moveTo(x, y);
+                } else {
+                    miniMapCtx.lineTo(x, y);
+                }
+            }
+            miniMapCtx.stroke();
+            
+            // 타워들
+            towers.forEach(tower => {
+                let x = (tower.x / canvas.width) * 120;
+                let y = (tower.y / canvas.height) * 80;
+                miniMapCtx.fillStyle = tower.color;
+                miniMapCtx.fillRect(x - 1, y - 1, 2, 2);
+            });
+            
+            // 적들
+            enemies.forEach(enemy => {
+                let x = (enemy.x / canvas.width) * 120;
+                let y = (enemy.y / canvas.height) * 80;
+                miniMapCtx.fillStyle = enemy.type === 'boss' ? '#ff0000' : '#ff9f43';
+                miniMapCtx.fillRect(x - 0.5, y - 0.5, 1, 1);
+            });
+        }
+        
+        // 배경 나무들 생성
+        let backgroundTrees = [];
+        
+        function generateBackgroundTrees() {
+            backgroundTrees = [];
+            
+            // 맵 전체에 나무들을 랜덤하게 배치
+            for (let i = 0; i < 40; i++) {
+                let x = Math.random() * canvas.width;
+                let y = Math.random() * canvas.height;
+                
+                // 경로와 너무 가깝지 않은 곳에만 배치
+                let tooClose = false;
+                for (let j = 0; j < path.length - 1; j++) {
+                    let p1 = path[j];
+                    let p2 = path[j + 1];
+                    let distance = distanceToLine(x, y, p1.x, p1.y, p2.x, p2.y);
+                    if (distance < 60) {
+                        tooClose = true;
+                        break;
+                    }
+                }
+                
+                // 시작점과 끝점에서도 충분히 떨어뜨리기
+                if (Math.sqrt((x - path[0].x) ** 2 + (y - path[0].y) ** 2) < 70 ||
+                    Math.sqrt((x - path[path.length - 1].x) ** 2 + (y - path[path.length - 1].y) ** 2) < 70) {
+                    tooClose = true;
+                }
+                
+                if (!tooClose) {
+                    backgroundTrees.push({
+                        x: x,
+                        y: y,
+                        size: 20 + Math.random() * 25,
+                        type: Math.random() < 0.7 ? 'tree' : 'bush',
+                        sway: Math.random() * Math.PI * 2, // 나무 흔들림 애니메이션용
+                        swaySpeed: 0.02 + Math.random() * 0.03
+                    });
+                }
+            }
+        }
+        
+        // 맵 테마에 맞는 나무 생성 (개선됨)
+        function generateBackgroundTrees() {
+            backgroundTrees = [];
+            let theme = mapThemes[currentMap];
+            
+            // 맵별로 다른 수의 나무 생성
+            for (let i = 0; i < theme.treeCount; i++) {
+                let x = Math.random() * canvas.width;
+                let y = Math.random() * canvas.height;
+                
+                // 경로와 너무 가깝지 않은 곳에만 배치
+                let tooClose = false;
+                for (let j = 0; j < path.length - 1; j++) {
+                    let p1 = path[j];
+                    let p2 = path[j + 1];
+                    let distance = distanceToLine(x, y, p1.x, p1.y, p2.x, p2.y);
+                    if (distance < 60) {
+                        tooClose = true;
+                        break;
+                    }
+                }
+                
+                // 시작점과 끝점에서도 충분히 떨어뜨리기
+                if (Math.sqrt((x - path[0].x) ** 2 + (y - path[0].y) ** 2) < 70 ||
+                    Math.sqrt((x - path[path.length - 1].x) ** 2 + (y - path[path.length - 1].y) ** 2) < 70) {
+                    tooClose = true;
+                }
+                
+                if (!tooClose) {
+                    backgroundTrees.push({
+                        x: x,
+                        y: y,
+                        size: 15 + Math.random() * 30,
+                        type: theme.treeTypes[Math.floor(Math.random() * theme.treeTypes.length)],
+                        color: theme.treeColors[Math.floor(Math.random() * theme.treeColors.length)],
+                        sway: Math.random() * Math.PI * 2,
+                        swaySpeed: 0.01 + Math.random() * 0.02
+                    });
+                }
+            }
+        }
+        
+        // 테마별 나무 그리기 (대폭 확장)
+        function drawBackgroundTrees() {
+            backgroundTrees.forEach(tree => {
+                tree.sway += tree.swaySpeed;
+                let swayOffset = Math.sin(tree.sway) * 1.5;
+                
+                // 그림자 (모든 타입 공통)
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+                ctx.beginPath();
+                ctx.ellipse(tree.x, tree.y + tree.size * 0.7, tree.size * 0.5, tree.size * 0.15, 0, 0, Math.PI * 2);
+                ctx.fill();
+                
+                switch(tree.type) {
+                    case 'tree': // 일반 나무 (숲)
+                        // 줄기
+                        ctx.fillStyle = '#8B4513';
+                        ctx.fillRect(tree.x - 3 + swayOffset, tree.y - tree.size * 0.3, 6, tree.size * 0.7);
+                        
+                        // 잎사귀
+                        ctx.fillStyle = tree.color;
+                        ctx.beginPath();
+                        ctx.arc(tree.x + swayOffset, tree.y - tree.size * 0.5, tree.size * 0.4, 0, Math.PI * 2);
+                        ctx.fill();
+                        break;
+                        
+                    case 'bush': // 덤불
+                        ctx.fillStyle = tree.color;
+                        for (let i = 0; i < 3; i++) {
+                            let offsetX = (i - 1) * tree.size * 0.15;
+                            ctx.beginPath();
+                            ctx.arc(tree.x + offsetX + swayOffset * 0.5, tree.y - i * 3, tree.size * 0.25, 0, Math.PI * 2);
+                            ctx.fill();
+                        }
+                        break;
+                        
+                    case 'cactus': // 선인장 (사막)
+                        ctx.fillStyle = tree.color;
+                        // 메인 기둥
+                        ctx.fillRect(tree.x - 6, tree.y - tree.size * 0.8, 12, tree.size * 0.8);
+                        // 가지들
+                        if (tree.size > 25) {
+                            ctx.fillRect(tree.x - 20, tree.y - tree.size * 0.5, 8, tree.size * 0.3);
+                            ctx.fillRect(tree.x + 12, tree.y - tree.size * 0.6, 8, tree.size * 0.4);
+                        }
+                        // 가시
+                        ctx.fillStyle = '#654321';
+                        for (let i = 0; i < 5; i++) {
+                            ctx.fillRect(tree.x - 2, tree.y - tree.size * 0.8 + i * tree.size * 0.15, 4, 2);
+                        }
+                        break;
+                        
+                    case 'rock': // 바위 (사막/산악)
+                        ctx.fillStyle = tree.color;
+                        ctx.beginPath();
+                        ctx.arc(tree.x, tree.y, tree.size * 0.3, 0, Math.PI * 2);
+                        ctx.fill();
+                        // 작은 바위들
+                        ctx.beginPath();
+                        ctx.arc(tree.x - tree.size * 0.2, tree.y + tree.size * 0.1, tree.size * 0.15, 0, Math.PI * 2);
+                        ctx.fill();
+                        ctx.beginPath();
+                        ctx.arc(tree.x + tree.size * 0.15, tree.y - tree.size * 0.1, tree.size * 0.2, 0, Math.PI * 2);
+                        ctx.fill();
+                        break;
+                        
+                    case 'pine': // 소나무 (산악)
+                        ctx.fillStyle = '#8B4513';
+                        ctx.fillRect(tree.x - 2 + swayOffset, tree.y - tree.size * 0.2, 4, tree.size * 0.6);
+                        
+                        ctx.fillStyle = tree.color;
+                        // 삼각형 모양 나무
+                        for (let i = 0; i < 3; i++) {
+                            ctx.beginPath();
+                            ctx.moveTo(tree.x + swayOffset, tree.y - tree.size * 0.8 + i * tree.size * 0.2);
+                            ctx.lineTo(tree.x - tree.size * 0.3 + swayOffset, tree.y - tree.size * 0.4 + i * tree.size * 0.2);
+                            ctx.lineTo(tree.x + tree.size * 0.3 + swayOffset, tree.y - tree.size * 0.4 + i * tree.size * 0.2);
+                            ctx.closePath();
+                            ctx.fill();
+                        }
+                        break;
+                        
+                    case 'swamptree': // 늪지 나무
+                        ctx.fillStyle = '#654321';
+                        ctx.fillRect(tree.x - 4 + swayOffset, tree.y - tree.size * 0.4, 8, tree.size * 0.8);
+                        
+                        ctx.fillStyle = tree.color;
+                        // 축 늘어진 가지들
+                        ctx.beginPath();
+                        ctx.arc(tree.x + swayOffset, tree.y - tree.size * 0.6, tree.size * 0.35, 0, Math.PI * 2);
+                        ctx.fill();
+                        
+                        // 늘어진 이끼
+                        ctx.strokeStyle = tree.color;
+                        ctx.lineWidth = 2;
+                        for (let i = 0; i < 3; i++) {
+                            ctx.beginPath();
+                            ctx.moveTo(tree.x + (i - 1) * 10 + swayOffset, tree.y - tree.size * 0.3);
+                            ctx.lineTo(tree.x + (i - 1) * 8 + swayOffset * 2, tree.y - tree.size * 0.1);
+                            ctx.stroke();
+                        }
+                        ctx.lineWidth = 1;
+                        break;
+                        
+                    case 'icetree': // 얼음 나무
+                        ctx.fillStyle = '#87ceeb';
+                        ctx.fillRect(tree.x - 3 + swayOffset * 0.3, tree.y - tree.size * 0.3, 6, tree.size * 0.7);
+                        
+                        ctx.fillStyle = tree.color;
+                        ctx.beginPath();
+                        ctx.arc(tree.x + swayOffset * 0.3, tree.y - tree.size * 0.5, tree.size * 0.35, 0, Math.PI * 2);
+                        ctx.fill();
+                        
+                        // 얼음 결정
+                        ctx.strokeStyle = '#ffffff';
+                        ctx.lineWidth = 1;
+                        ctx.beginPath();
+                        ctx.moveTo(tree.x - 5 + swayOffset * 0.3, tree.y - tree.size * 0.5);
+                        ctx.lineTo(tree.x + 5 + swayOffset * 0.3, tree.y - tree.size * 0.5);
+                        ctx.moveTo(tree.x + swayOffset * 0.3, tree.y - tree.size * 0.5 - 5);
+                        ctx.lineTo(tree.x + swayOffset * 0.3, tree.y - tree.size * 0.5 + 5);
+                        ctx.stroke();
+                        break;
+                        
+                    case 'crystal': // 크리스털 (얼음)
+                        ctx.fillStyle = tree.color;
+                        ctx.beginPath();
+                        ctx.moveTo(tree.x, tree.y - tree.size * 0.6);
+                        ctx.lineTo(tree.x - tree.size * 0.2, tree.y);
+                        ctx.lineTo(tree.x + tree.size * 0.2, tree.y);
+                        ctx.closePath();
+                        ctx.fill();
+                        
+                        ctx.strokeStyle = '#ffffff';
+                        ctx.lineWidth = 2;
+                        ctx.stroke();
+                        break;
+                }
+                
+                // 장식 요소 (꽃, 열매 등)
+                if (Math.random() < 0.2) {
+                    let decorColor = currentMap === 'desert' ? '#FF4500' :
+                                   currentMap === 'ice' ? '#ffffff' :
+                                   currentMap === 'swamp' ? '#9400d3' : '#FF69B4';
+                    ctx.fillStyle = decorColor;
+                    ctx.beginPath();
+                    ctx.arc(tree.x + (Math.random() - 0.5) * tree.size * 0.5 + swayOffset, 
+                            tree.y - tree.size * 0.4 + (Math.random() - 0.5) * tree.size * 0.3, 
+                            1.5, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            });
+        }
+        canvas.addEventListener('mousemove', (e) => {
+            let rect = canvas.getBoundingClientRect();
+            mousePos = {
+                x: e.clientX - rect.left,
+                y: e.clientY - rect.top
+            };
+        });
+        
+        function getMousePos() {
+            return mousePos;
+        }
+        
+        // 경로 그리기 (개선됨)
+        function drawPath() {
+            // 메인 경로
+            ctx.strokeStyle = 'rgba(76, 201, 240, 0.15)';
+            ctx.lineWidth = 30;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.beginPath();
+            ctx.moveTo(path[0].x, path[0].y);
+            for (let i = 1; i < path.length; i++) {
+                ctx.lineTo(path[i].x, path[i].y);
+            }
+            ctx.stroke();
+            
+            // 경로 테두리
+            ctx.strokeStyle = 'rgba(76, 201, 240, 0.3)';
+            ctx.lineWidth = 25;
+            ctx.beginPath();
+            ctx.moveTo(path[0].x, path[0].y);
+            for (let i = 1; i < path.length; i++) {
+                ctx.lineTo(path[i].x, path[i].y);
+            }
+            ctx.stroke();
+            
+            // 방향 화살표 (더 많이)
+            for (let i = 0; i < path.length - 1; i++) {
+                let p1 = path[i];
+                let p2 = path[i + 1];
+                let segments = 3;
+                
+                for (let j = 1; j <= segments; j++) {
+                    let t = j / (segments + 1);
+                    let x = p1.x + (p2.x - p1.x) * t;
+                    let y = p1.y + (p2.y - p1.y) * t;
+                    
+                    ctx.fillStyle = 'rgba(76, 201, 240, 0.4)';
+                    ctx.font = '16px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('→', x, y + 5);
+                }
+            }
+            
+            // 시작점과 끝점 표시 (개선됨)
+            ctx.fillStyle = '#4ecdc4';
+            ctx.beginPath();
+            ctx.arc(path[0].x, path[0].y, 25, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = 'white';
+            ctx.font = '20px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('🚪', path[0].x, path[0].y + 7);
+            
+            ctx.fillStyle = '#ff6b6b';
+            ctx.beginPath();
+            ctx.arc(path[path.length - 1].x, path[path.length - 1].y, 25, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = 'white';
+            ctx.fillText('🏠', path[path.length - 1].x, path[path.length - 1].y + 7);
+        }
+        
+        // 웨이브 생성 (대폭 개선)
+        function generateWave(waveNumber) {
+            let wave = [];
+            let difficulty = Math.min(waveNumber, 20) / 20; // 최대 난이도 제한
+            
+            let basicEnemies = Math.floor(5 + waveNumber * 1.5);
+            let strongEnemies = Math.floor(waveNumber > 2 ? waveNumber / 2 : 0);
+            let fastEnemies = Math.floor(waveNumber > 3 ? waveNumber / 3 : 0);
+            let shieldedEnemies = Math.floor(waveNumber > 5 ? waveNumber / 4 : 0);
+            let flyingEnemies = Math.floor(waveNumber > 7 ? waveNumber / 5 : 0);
+            let bossEnemies = Math.floor(waveNumber > 10 ? waveNumber / 8 : waveNumber > 5 ? 1 : 0);
+            
+            for (let i = 0; i < basicEnemies; i++) wave.push('basic');
+            for (let i = 0; i < strongEnemies; i++) wave.push('strong');
+            for (let i = 0; i < fastEnemies; i++) wave.push('fast');
+            for (let i = 0; i < shieldedEnemies; i++) wave.push('shielded');
+            for (let i = 0; i < flyingEnemies; i++) wave.push('flying');
+            for (let i = 0; i < bossEnemies; i++) wave.push('boss');
+            
+            // 배열 섞기
+            for (let i = wave.length - 1; i > 0; i--) {
+                let j = Math.floor(Math.random() * (i + 1));
+                [wave[i], wave[j]] = [wave[j], wave[i]];
+            }
+            
+            return wave;
+        }
+        
+        // 웨이브 정보 표시
+        function showWaveInfo() {
+            let nextWave = generateWave(gameState.wave);
+            let preview = {};
+            
+            nextWave.forEach(enemy => {
+                preview[enemy] = (preview[enemy] || 0) + 1;
+            });
+            
+            let html = '<h4>다음 웨이브 구성:</h4>';
+            html += '<div style="text-align: left;">';
+            
+            if (preview.basic) html += `<p>🟠 기본 적: ${preview.basic}마리</p>`;
+            if (preview.strong) html += `<p>🔴 강화 적: ${preview.strong}마리</p>`;
+            if (preview.fast) html += `<p>🔵 빠른 적: ${preview.fast}마리</p>`;
+            if (preview.shielded) html += `<p>🟡 쉴드 적: ${preview.shielded}마리</p>`;
+            if (preview.flying) html += `<p>🟢 비행 적: ${preview.flying}마리</p>`;
+            if (preview.boss) html += `<p>🟣 보스: ${preview.boss}마리</p>`;
+            
+            html += '</div>';
+            html += `<p><strong>총 ${nextWave.length}마리</strong></p>`;
+            
+            document.getElementById('wavePreview').innerHTML = html;
+            document.getElementById('nextWaveInfo').style.display = 'block';
+        }
+        
+        function closeWaveInfo() {
+            document.getElementById('nextWaveInfo').style.display = 'none';
+        }
+        
+        // 웨이브 시작
+        function startWave() {
+            if (waveStarted) return;
+            
+            currentWave = generateWave(gameState.wave);
+            waveStarted = true;
+            enemiesSpawned = 0;
+            spawnTimer = 0;
+            
+            document.getElementById('startWaveBtn').disabled = true;
+            playSound(400, 0.5, 'sine');
+            updateUI();
+        }
+        
+        // 적 스폰 (개선됨)
+        function spawnEnemies() {
+            if (!waveStarted || enemiesSpawned >= currentWave.length) return;
+            
+            spawnTimer++;
+            let spawnRate = Math.max(30, 60 - gameState.wave * 2); // 웨이브가 진행될수록 빨라짐
+            spawnRate /= gameState.gameSpeed;
+            
+            if (spawnTimer >= spawnRate) {
+                enemies.push(new Enemy(currentWave[enemiesSpawned]));
+                enemiesSpawned++;
+                spawnTimer = 0;
+            }
+        }
+        
+        // 웨이브 완료 확인
+        function checkWaveComplete() {
+            if (waveStarted && enemiesSpawned >= currentWave.length && enemies.length === 0) {
+                gameState.wave++;
+                let bonus = 50 + gameState.wave * 15;
+                gameState.gold += bonus;
+                gameState.score += bonus;
+                gameState.research += Math.floor(gameState.wave / 2);
+                waveStarted = false;
+                document.getElementById('startWaveBtn').disabled = false;
+                playSound(800, 1, 'sine');
+                
+                checkAchievements();
+            }
+        }
+        
+        // 향상된 스킬 시스템
+        function useSkill(skillType) {
+            if (!audioContext) initAudio();
+            
+            const skill = gameState.skills[skillType];
+            if (skill.cooldown > 0 || gameState.gold < skill.cost) return;
+            
+            gameState.gold -= skill.cost;
+            skill.cooldown = 600; // 10초 쿨다운
+            
+            switch (skillType) {
+                case 'bomb':
+                    // 모든 적에게 광역 데미지
+                    for (let enemy of enemies) {
+                        enemy.takeDamage(150, null, true);
+                        for (let i = 0; i < 15; i++) {
+                            particles.push(new Particle(enemy.x, enemy.y, enemy.type));
+                        }
+                    }
+                    playSound(200, 1, 'sawtooth');
+                    break;
+                    
+                case 'freeze':
+                    // 모든 적을 5초간 빙결
+                    for (let enemy of enemies) {
+                        enemy.applySlow(0.05, 300);
+                    }
+                    playSound(1000, 0.8, 'sine');
+                    break;
+                    
+                case 'boost':
+                    // 모든 타워 5초간 강화
+                    for (let tower of towers) {
+                        tower.boostTimer = 300;
+                    }
+                    playSound(1500, 0.6, 'square');
+                    break;
+                    
+                case 'storm':
+                    // 번개 폭풍 - 가장 강한 적들에게 즉사급 데미지
+                    let strongestEnemies = enemies
+                        .sort((a, b) => b.hp - a.hp)
+                        .slice(0, Math.min(5, enemies.length));
+                    
+                    strongestEnemies.forEach(enemy => {
+                        enemy.takeDamage(enemy.hp * 0.8, null, true);
+                        effects.push(new Lightning(enemy.x, enemy.y));
+                    });
+                    playSound(100, 1.5, 'sawtooth');
+                    break;
+            }
+        }
+        
+        // 번개 효과 클래스
+        class Lightning {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.life = 20;
+                this.maxLife = 20;
+                this.branches = [];
+                
+                for (let i = 0; i < 5; i++) {
+                    this.branches.push({
+                        x: x + (Math.random() - 0.5) * 100,
+                        y: y + (Math.random() - 0.5) * 100,
+                        opacity: Math.random()
+                    });
+                }
+            }
+            
+            update() {
+                this.life--;
+                if (this.life <= 0) {
+                    let index = effects.indexOf(this);
+                    if (index > -1) {
+                        effects.splice(index, 1);
+                    }
+                }
+            }
+            
+            draw() {
+                let alpha = this.life / this.maxLife;
+                ctx.strokeStyle = `rgba(255, 255, 0, ${alpha})`;
+                ctx.lineWidth = 3;
+                
+                this.branches.forEach(branch => {
+                    ctx.beginPath();
+                    ctx.moveTo(this.x, this.y - 50);
+                    ctx.lineTo(branch.x, branch.y);
+                    ctx.stroke();
+                });
+                
+                ctx.lineWidth = 1;
+            }
+        }
+        
+        // 향상된 파티클 클래스
+        class Particle {
+            constructor(x, y, type = 'basic') {
+                this.x = x;
+                this.y = y;
+                this.vx = (Math.random() - 0.5) * 8;
+                this.vy = (Math.random() - 0.5) * 8;
+                this.life = 50;
+                this.maxLife = 50;
+                this.size = 2 + Math.random() * 3;
+                this.color = type === 'boss' ? '#7209b7' :
+                            type === 'strong' ? '#ff6b6b' :
+                            type === 'fast' ? '#4ecdc4' :
+                            type === 'shielded' ? '#feca57' :
+                            type === 'flying' ? '#a8e6cf' : '#ff9f43';
+            }
+            
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                this.vx *= 0.95;
+                this.vy *= 0.95;
+                this.life--;
+                
+                if (this.life <= 0) {
+                    let index = particles.indexOf(this);
+                    if (index > -1) {
+                        particles.splice(index, 1);
+                    }
+                }
+            }
+            
+            draw() {
+                let alpha = this.life / this.maxLife;
+                ctx.fillStyle = this.color.includes('rgb') ? 
+                    this.color.replace(')', `, ${alpha})`).replace('rgb', 'rgba') :
+                    `rgba(255, 159, 67, ${alpha})`;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size * alpha, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+        
+        // 폭발 효과 클래스 (개선됨)
+        class Explosion {
+            constructor(x, y, radius) {
+                this.x = x;
+                this.y = y;
+                this.radius = radius;
+                this.life = 40;
+                this.maxLife = 40;
+            }
+            
+            update() {
+                this.life--;
+                if (this.life <= 0) {
+                    let index = effects.indexOf(this);
+                    if (index > -1) {
+                        effects.splice(index, 1);
+                    }
+                }
+            }
+            
+            draw() {
+                let alpha = this.life / this.maxLife;
+                let currentRadius = this.radius * (1.2 - alpha);
+                
+                // 외부 링
+                ctx.fillStyle = `rgba(255, 100, 0, ${alpha * 0.4})`;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, currentRadius, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // 중간 링
+                ctx.fillStyle = `rgba(255, 150, 0, ${alpha * 0.6})`;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, currentRadius * 0.7, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // 내부 코어
+                ctx.fillStyle = `rgba(255, 255, 150, ${alpha})`;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, currentRadius * 0.3, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+        
+        // 스킬 쿨다운 업데이트
+        function updateSkills() {
+            for (let skillName in gameState.skills) {
+                let skill = gameState.skills[skillName];
+                if (skill.cooldown > 0) {
+                    skill.cooldown -= gameState.gameSpeed;
+                    let element = document.getElementById(skillName + 'Cooldown');
+                    if (skill.cooldown > 0) {
+                        element.style.display = 'flex';
+                        element.textContent = Math.ceil(skill.cooldown / 60);
+                    } else {
+                        element.style.display = 'none';
+                    }
+                }
+            }
+        }
+        
+        // UI 업데이트 (개선됨)
+        function updateUI() {
+            document.getElementById('gold').textContent = gameState.gold;
+            document.getElementById('lives').textContent = gameState.lives;
+            document.getElementById('wave').textContent = gameState.wave;
+            document.getElementById('score').textContent = gameState.score;
+            document.getElementById('research').textContent = gameState.research;
+            document.getElementById('achievements').textContent = gameState.achievements;
+            document.getElementById('enemiesLeft').textContent = waveStarted ? 
+                currentWave.length - enemiesSpawned + enemies.length : 0;
+                
+            // 타워 버튼 활성화/비활성화
+            document.querySelector('.basic-tower').style.opacity = gameState.gold >= 30 ? '1' : '0.5';
+            document.querySelector('.sniper-tower').style.opacity = gameState.gold >= 60 ? '1' : '0.5';
+            document.querySelector('.splash-tower').style.opacity = gameState.gold >= 80 ? '1' : '0.5';
+            document.querySelector('.slow-tower').style.opacity = gameState.gold >= 50 ? '1' : '0.5';
+            document.querySelector('.laser-tower').style.opacity = gameState.gold >= 120 ? '1' : '0.5';
+            
+            // 연구 버튼 업데이트 (수정됨)
+            ['goldBonus', 'moreLife', 'towerDamage', 'towerSpeed'].forEach(researchType => {
+                let btn = document.getElementById(researchType + 'Btn');
+                if (btn && gameState.researchUpgrades && !gameState.researchUpgrades[researchType]) {
+                    let cost = researchType === 'goldBonus' ? 50 : 
+                              researchType === 'moreLife' ? 40 :
+                              researchType === 'towerDamage' ? 60 : 80;
+                    btn.disabled = gameState.research < cost;
+                    btn.style.opacity = gameState.research >= cost ? '1' : '0.5';
+                }
+            });
+        }
+        
+        // 타워 선택
+        function selectTower(type) {
+            if (gameState.gold < towerTypes[type].cost) return;
+            
+            gameState.selectedTool = gameState.selectedTool === type ? null : type;
+            gameState.selectedTower = null;
+            
+            // 버튼 선택 상태 업데이트
+            document.querySelectorAll('.tower-btn').forEach(btn => btn.classList.remove('selected'));
+            if (gameState.selectedTool) {
+                document.querySelector(`.${type}-tower`).classList.add('selected');
+            }
+            
+            closeTowerInfo();
+        }
+        
+        // 타워 정보창 표시 (개선됨)
+        function showTowerInfo(tower) {
+            gameState.selectedTower = tower;
+            const towerData = towerTypes[tower.type];
+            
+            document.getElementById('towerTitle').textContent = `${towerData.name} (레벨 ${tower.level})`;
+            
+            let stats = `
+                <div style="text-align: left;">
+                <p>💥 데미지: ${Math.round(tower.damage)}</p>
+                <p>🎯 사거리: ${tower.range}</p>
+                <p>⚡ 공격속도: ${(60/tower.fireRate).toFixed(1)}/초</p>
+                <p>🏆 처치수: ${tower.kills}마리</p>
+                <p>📊 총 데미지: ${Math.round(tower.totalDamage)}</p>
+                ${tower.splashRadius ? `<p>💥 스플래시: ${tower.splashRadius}</p>` : ''}
+                ${tower.slowEffect ? `<p>🧊 슬로우: ${Math.round((1-tower.slowEffect)*100)}%</p>` : ''}
+                ${tower.piercing ? `<p>⚡ 관통: ${tower.piercing}회</p>` : ''}
+                <p>💰 판매가: ${tower.getSellValue()}G</p>
+                </div>
+            `;
+            document.getElementById('towerStats').innerHTML = stats;
+            
+            let upgrades = '';
+            if (tower.level <= towerData.upgrades.length) {
+                const upgrade = towerData.upgrades[tower.level - 1];
+                upgrades = `<button class="upgrade-btn" onclick="upgradeTower()" ${gameState.gold < upgrade.cost ? 'disabled' : ''}>
+                    업그레이드 (${upgrade.cost}G)
+                </button>`;
+            } else {
+                upgrades = '<p style="color: #ffd700;">⭐ 최대 레벨! ⭐</p>';
+            }
+            document.getElementById('towerUpgrades').innerHTML = upgrades;
+            
+            document.getElementById('towerInfo').style.display = 'block';
+        }
+        
+        // 타워 정보창 닫기
+        function closeTowerInfo() {
+            document.getElementById('towerInfo').style.display = 'none';
+            gameState.selectedTower = null;
+        }
+        
+        // 타워 업그레이드
+        function upgradeTower() {
+            if (gameState.selectedTower && gameState.selectedTower.upgrade()) {
+                showTowerInfo(gameState.selectedTower);
+                playSound(1200, 0.3, 'sine');
+            }
+        }
+        
+        // 타워 판매
+        function sellTower() {
+            if (gameState.selectedTower) {
+                gameState.gold += gameState.selectedTower.getSellValue();
+                let index = towers.indexOf(gameState.selectedTower);
+                if (index > -1) {
+                    towers.splice(index, 1);
+                }
+                closeTowerInfo();
+                playSound(600, 0.3, 'triangle');
+            }
+        }
+        
+        // 게임 일시정지
+        function pauseGame() {
+            gameState.paused = !gameState.paused;
+            let btn = event.target;
+            btn.textContent = gameState.paused ? '계속하기' : '일시정지';
+        }
+        
+        // 게임 오버 (개선됨)
+        function endGame(victory = false) {
+            gameState.gameOver = true;
+            
+            let finalStats = `
+                <div style="text-align: left; margin: 15px 0;">
+                <h4>최종 통계:</h4>
+                <p>🌊 도달 웨이브: ${gameState.wave}</p>
+                <p>👹 총 처치: ${gameState.totalKills}마리</p>
+                <p>💥 총 데미지: ${Math.round(gameState.totalDamage)}</p>
+                <p>🏰 건설한 타워: ${gameState.towersBuilt}개</p>
+                <p>🔥 최고 콤보: ${gameState.maxCombo}</p>
+                <p>🏆 도전과제: ${gameState.achievements}개</p>
+                </div>
+            `;
+            
+            document.getElementById('finalStats').innerHTML = finalStats;
+            document.getElementById('gameOver').style.display = 'block';
+            document.getElementById('gameOverTitle').textContent = victory ? '🎉 승리!' : '💀 게임 오버!';
+            document.getElementById('gameOverMessage').textContent = 
+                victory ? `대단합니다! 웨이브 ${gameState.wave}까지 성공했습니다!` : 
+                `기지가 함락되었습니다. 웨이브 ${gameState.wave}에서 게임 종료.`;
+        }
+        
+        // 게임 재시작 (연구 시스템 수정)
+        function restartGame() {
+            gameState = {
+                gold: 200,
+                lives: 30,
+                wave: 1,
+                score: 0,
+                research: 0, // 연구 포인트 리셋
+                achievements: 0,
+                selectedTool: null,
+                selectedTower: null,
+                paused: false,
+                gameOver: false,
+                gameSpeed: 1,
+                combo: 0,
+                maxCombo: 0,
+                comboTimer: 0,
+                weather: 'clear',
+                weatherTimer: 0,
+                totalKills: 0,
+                totalDamage: 0,
+                towersBuilt: 0,
+                skills: {
+                    bomb: { cooldown: 0, cost: 100 },
+                    freeze: { cooldown: 0, cost: 80 },
+                    boost: { cooldown: 0, cost: 60 },
+                    storm: { cooldown: 0, cost: 150 }
+                },
+                researchUpgrades: { // 연구 업그레이드 상태 리셋
+                    goldBonus: false,
+                    moreLife: false,
+                    towerDamage: false,
+                    towerSpeed: false
+                },
+                achievementsList: [
+                    { id: 'firstTower', name: '첫 타워', desc: '타워를 처음 건설하세요', unlocked: false },
+                    { id: 'wave10', name: '생존자', desc: '웨이브 10에 도달하세요', unlocked: false },
+                    { id: 'combo50', name: '콤보 마스터', desc: '50 콤보를 달성하세요', unlocked: false },
+                    { id: 'kill1000', name: '학살자', desc: '적 1000마리를 처치하세요', unlocked: false },
+                    { id: 'noLife', name: '완벽한 방어', desc: '라이프를 하나도 잃지 않고 웨이브 5를 클리어하세요', unlocked: false }
+                ]
+            };
+            
+            towers = [];
+            enemies = [];
+            projectiles = [];
+            particles = [];
+            effects = [];
+            damageNumbers = [];
+            weatherParticles = [];
+            waveStarted = false;
+            enemiesSpawned = 0;
+            
+            document.getElementById('gameOver').style.display = 'none';
+            document.getElementById('startWaveBtn').disabled = false;
+            document.querySelectorAll('.tower-btn').forEach(btn => btn.classList.remove('selected'));
+            document.querySelectorAll('.speed-btn')[1].click(); // 1x 속도로 리셋
+            closeTowerInfo();
+            closeWaveInfo();
+            
+            // 연구 버튼 리셋 (수정됨)
+            ['goldBonus', 'moreLife', 'towerDamage', 'towerSpeed'].forEach(researchType => {
+                let btn = document.getElementById(researchType + 'Btn');
+                if (btn) {
+                    btn.disabled = false;
+                    btn.style.background = 'linear-gradient(45deg, #7209b7, #4cc9f0)';
+                    btn.style.opacity = '0.5';
+                    
+                    // 원래 비용으로 텍스트 복원
+                    let cost = researchType === 'goldBonus' ? '50💎' : 
+                              researchType === 'moreLife' ? '40💎' :
+                              researchType === 'towerDamage' ? '60💎' : '80💎';
+                    btn.textContent = cost;
+                }
+            });
+            
+            // 배경 나무들 다시 생성
+            generateBackgroundTrees();
+        }
+        
+        // 점과 선분 사이의 거리 계산
+        function distanceToLine(px, py, x1, y1, x2, y2) {
+            let A = px - x1;
+            let B = py - y1;
+            let C = x2 - x1;
+            let D = y2 - y1;
+            
+            let dot = A * C + B * D;
+            let lenSq = C * C + D * D;
+            let param = -1;
+            if (lenSq !== 0) param = dot / lenSq;
+            
+            let xx, yy;
+            if (param < 0) {
+                xx = x1;
+                yy = y1;
+            } else if (param > 1) {
+                xx = x2;
+                yy = y2;
+            } else {
+                xx = x1 + param * C;
+                yy = y1 + param * D;
+            }
+            
+            let dx = px - xx;
+            let dy = py - yy;
+            return Math.sqrt(dx * dx + dy * dy);
+        }
+        
+        // 마우스 클릭 처리 (대폭 개선)
+        canvas.addEventListener('click', (e) => {
+            if (gameState.gameOver || gameState.paused) return;
+            
+            let rect = canvas.getBoundingClientRect();
+            let x = e.clientX - rect.left;
+            let y = e.clientY - rect.top;
+            
+            // 타워 클릭 확인
+            for (let tower of towers) {
+                if (Math.sqrt((tower.x - x) ** 2 + (tower.y - y) ** 2) < 25) {
+                    showTowerInfo(tower);
+                    gameState.selectedTool = null;
+                    document.querySelectorAll('.tower-btn').forEach(btn => btn.classList.remove('selected'));
+                    return;
+                }
+            }
+            
+            // 타워 배치
+            if (gameState.selectedTool && towerTypes[gameState.selectedTool]) {
+                const towerType = towerTypes[gameState.selectedTool];
+                if (gameState.gold >= towerType.cost) {
+                    // 타워 배치 가능한 위치인지 확인
+                    let canPlace = true;
+                    let reason = '';
+                    
+                    // 다른 타워와 너무 가깝지 않은지 확인
+                    for (let tower of towers) {
+                        if (Math.sqrt((tower.x - x) ** 2 + (tower.y - y) ** 2) < 55) {
+                            canPlace = false;
+                            reason = '다른 타워와 너무 가깝습니다';
+                            break;
+                        }
+                    }
+                    
+                    // 경로 위가 아닌지 확인
+                    if (canPlace) {
+                        for (let i = 0; i < path.length - 1; i++) {
+                            let p1 = path[i];
+                            let p2 = path[i + 1];
+                            let distance = distanceToLine(x, y, p1.x, p1.y, p2.x, p2.y);
+                            if (distance < 40) {
+                                canPlace = false;
+                                reason = '경로 위에는 건설할 수 없습니다';
+                                break;
+                            }
+                        }
+                    }
+                    
+                    // 맵 경계 확인
+                    if (canPlace && (x < 30 || x > canvas.width - 30 || y < 30 || y > canvas.height - 30)) {
+                        canPlace = false;
+                        reason = '맵 경계에는 건설할 수 없습니다';
+                    }
+                    
+                    if (canPlace) {
+                        towers.push(new Tower(x, y, gameState.selectedTool));
+                        gameState.gold -= towerType.cost;
+                        gameState.towersBuilt++;
+                        gameState.selectedTool = null;
+                        document.querySelectorAll('.tower-btn').forEach(btn => btn.classList.remove('selected'));
+                        playSound(800, 0.2, 'triangle');
+                        
+                        checkAchievements();
+                    } else {
+                        // 배치 불가 피드백
+                        playSound(150, 0.3, 'sawtooth');
+                    }
+                }
+            } else {
+                closeTowerInfo();
+            }
+        });
+        
+        // 게임 루프 (최종 완성)
+        function gameLoop() {
+            if (!gameState.paused && !gameState.gameOver) {
+                // 적 스폰
+                spawnEnemies();
+                
+                // 모든 객체 업데이트
+                towers.forEach(tower => tower.update());
+                enemies.forEach(enemy => enemy.update());
+                projectiles.forEach(projectile => projectile.update());
+                particles.forEach(particle => particle.update());
+                effects.forEach(effect => effect.update());
+                damageNumbers.forEach(damage => damage.update());
+                
+                // 시스템 업데이트
+                updateSkills();
+                updateCombo();
+                updateWeather();
+                
+                // 웨이브 완료 확인
+                checkWaveComplete();
+                
+                // 게임 오버 확인
+                if (gameState.lives <= 0) {
+                    endGame(false);
+                }
+                
+                // 승리 조건 (웨이브 50 클리어)
+                if (gameState.wave > 50) {
+                    endGame(true);
+                }
+            }
+            
+            // 화면 그리기
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // 배경 나무들 먼저 그리기 (다른 요소들 뒤에)
+            drawBackgroundTrees();
+            
+            drawPath();
+            towers.forEach(tower => tower.draw());
+            enemies.forEach(enemy => enemy.draw());
+            projectiles.forEach(projectile => projectile.draw());
+            particles.forEach(particle => particle.draw());
+            effects.forEach(effect => effect.draw());
+            damageNumbers.forEach(damage => damage.draw());
+            
+            // 날씨 효과 그리기
+            drawWeather();
+            
+            // 미니맵 그리기
+            drawMiniMap();
+            
+            updateUI();
+            requestAnimationFrame(gameLoop);
+        }
+        
+        // 키보드 단축키 (확장)
+        document.addEventListener('keydown', (e) => {
+            if (gameState.gameOver) return;
+            
+            switch(e.key) {
+                case '1': selectTower('basic'); break;
+                case '2': selectTower('sniper'); break;
+                case '3': selectTower('splash'); break;
+                case '4': selectTower('slow'); break;
+                case '5': selectTower('laser'); break;
+                case ' ': 
+                    e.preventDefault(); 
+                    pauseGame(); 
+                    break;
+                case 'Enter': 
+                    e.preventDefault();
+                    if (!waveStarted) startWave(); 
+                    break;
+                case 'Escape': 
+                    gameState.selectedTool = null;
+                    document.querySelectorAll('.tower-btn').forEach(btn => btn.classList.remove('selected'));
+                    closeTowerInfo();
+                    closeWaveInfo();
+                    break;
+                case 'q': useSkill('bomb'); break;
+                case 'w': useSkill('freeze'); break;
+                case 'e': useSkill('boost'); break;
+                case 'r': useSkill('storm'); break;
+                case 'i': showWaveInfo(); break;
+                case 'p': setGameSpeed(gameState.gameSpeed === 1 ? 2 : 1); break;
+            }
+        });
+        
+        // 터치 지원 (개선)
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            let touch = e.touches[0];
+            let rect = canvas.getBoundingClientRect();
+            let clickEvent = new MouseEvent('click', {
+                clientX: touch.clientX,
+                clientY: touch.clientY
+            });
+            canvas.dispatchEvent(clickEvent);
+        });
+        
+        // 마우스 휠로 게임 속도 조절
+        canvas.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            if (e.deltaY < 0 && gameState.gameSpeed < 4) {
+                setGameSpeed(gameState.gameSpeed * 2);
+            } else if (e.deltaY > 0 && gameState.gameSpeed > 0.5) {
+                setGameSpeed(gameState.gameSpeed / 2);
+            }
+        });
+        
+        // 창 크기 변경 시 캔버스 조정
+        window.addEventListener('resize', () => {
+            // 반응형 처리 필요시 여기에 추가
+        });
+        
+        // 게임 시작 안내
+        function showGameInstructions() {
+            console.log(`
+🎮 타워 디펜스 ULTIMATE 조작법:
+
+🏰 타워 건설:
+- 1-5 키: 타워 타입 선택
+- 마우스 클릭: 타워 배치
+- 타워 클릭: 정보/업그레이드
+
+⚡ 스킬:
+- Q: 폭탄 (모든 적에게 데미지)
+- W: 빙결 (모든 적 동결)
+- E: 강화 (타워 부스트)
+- R: 번개 폭풍 (강적 처치)
+
+🎮 게임 제어:
+- 스페이스: 일시정지
+- 엔터: 웨이브 시작
+- ESC: 선택 취소
+- I: 웨이브 정보
+- P: 속도 전환 (1x/2x)
+- 마우스 휠: 속도 조절
+
+🏆 목표: 웨이브 50까지 생존하세요!
+            `);
+        }
+        
+        // 게임 시작
+        initAudio();
+        showGameInstructions();
+        
+        // 배경 나무들 생성
+        generateBackgroundTrees();
+        
+        // 초기 날씨 파티클 생성
+        for (let i = 0; i < 30; i++) {
+            weatherParticles.push(createWeatherParticle());
+        }
+        
+        gameLoop();
+    </script>
+</body>
+</html>
