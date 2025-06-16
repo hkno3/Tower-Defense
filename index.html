@@ -779,13 +779,13 @@
                 range: 85,
                 fireRate: 45,
                 projectileSpeed: 12,
-                slowEffect: 0.4,
+                slowEffect: 0.8,
                 slowDuration: 180,
                 color: '#4ecdc4',
                 name: '빙결 타워',
                 upgrades: [
-                    { cost: 60, slowEffect: -0.15, slowDuration: 60, range: 25 },
-                    { cost: 120, slowEffect: -0.2, slowDuration: 120, damage: 30 }
+                    { cost: 60, slowEffect: -0.65, slowDuration: 60, range: 25 },
+                    { cost: 120, slowEffect: -0.5, slowDuration: 120, damage: 30 }
                 ]
             },
             laser: {
@@ -1040,7 +1040,7 @@
                 this.x = path[0].x;
                 this.y = path[0].y;
                 this.pathIndex = 0;
-                this.maxHp = 200;
+                this.maxHp = 400;
                 this.hp = this.maxHp;
                 this.reward = 18;
                 this.researchReward = 1;
@@ -1055,8 +1055,8 @@
                 this.maxShield = 0;
                 
                 if (type === 'strong') {
-                    this.maxHp = 500;
-                    this.hp = 500;
+                    this.maxHp = 1000;
+                    this.hp = 1000;
                     this.reward = 35;
                     this.researchReward = 2;
                     this.baseSpeed *= 0.75;
@@ -1064,16 +1064,16 @@
                     this.size = 20;
                     this.armor = 5;
                 } else if (type === 'fast') {
-                    this.maxHp = 160;
-                    this.hp = 160;
+                    this.maxHp = 320;
+                    this.hp = 320;
                     this.reward = 25;
                     this.researchReward = 2;
                     this.baseSpeed *= 2.2;
                     this.speed = this.baseSpeed;
                     this.size = 12;
                 } else if (type === 'boss') {
-                    this.maxHp = 2000;
-                    this.hp = 2000;
+                    this.maxHp = 4000;
+                    this.hp = 4000;
                     this.reward = 150;
                     this.researchReward = 10;
                     this.baseSpeed *= 0.5;
@@ -1082,8 +1082,8 @@
                     this.armor = 15;
                     this.regeneration = 2;
                 } else if (type === 'shielded') {
-                    this.maxHp = 300;
-                    this.hp = 300;
+                    this.maxHp = 600;
+                    this.hp = 600;
                     this.shield = 200;
                     this.maxShield = 200;
                     this.reward = 40;
@@ -1092,8 +1092,8 @@
                     this.speed = this.baseSpeed;
                     this.size = 18;
                 } else if (type === 'flying') {
-                    this.maxHp = 200;
-                    this.hp = 200;
+                    this.maxHp = 400;
+                    this.hp = 400;
                     this.reward = 30;
                     this.researchReward = 2;
                     this.baseSpeed *= 1.5;
