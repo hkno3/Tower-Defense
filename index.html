@@ -1034,76 +1034,84 @@
             }
         }
         
-        // 향상된 적 클래스
-        class Enemy {
-            constructor(type = 'basic') {
-                this.x = path[0].x;
-                this.y = path[0].y;
-                this.pathIndex = 0;
-                this.maxHp = 800;
-                this.hp = this.maxHp;
-                this.reward = 9;
-                this.researchReward = 1;
-                this.size = 15;
-                this.baseSpeed = 1.2 + Math.random() * 0.4;
-                this.speed = this.baseSpeed;
-                this.slowTimer = 0;
-                this.frozen = false;
-                this.armor = 0;
-                this.regeneration = 0;
-                this.shield = 0;
-                this.maxShield = 0;
-                
-                if (type === 'strong') {
-                    this.maxHp = 2000;
-                    this.hp = 2000;
-                    this.reward = 17;
-                    this.researchReward = 2;
-                    this.baseSpeed *= 0.75;
-                    this.speed = this.baseSpeed;
-                    this.size = 20;
-                    this.armor = 5;
-                } else if (type === 'fast') {
-                    this.maxHp = 600;
-                    this.hp = 600;
-                    this.reward = 12;
-                    this.researchReward = 2;
-                    this.baseSpeed *= 2.2;
-                    this.speed = this.baseSpeed;
-                    this.size = 12;
-                } else if (type === 'boss') {
-                    this.maxHp = 20000;
-                    this.hp = 20000;
-                    this.reward = 150;
-                    this.researchReward = 10;
-                    this.baseSpeed *= 0.5;
-                    this.speed = this.baseSpeed;
-                    this.size = 35;
-                    this.armor = 15;
-                    this.regeneration = 2;
-                } else if (type === 'shielded') {
-                    this.maxHp = 1000;
-                    this.hp = 1000;
-                    this.shield = 500;
-                    this.maxShield = 500;
-                    this.reward = 20;
-                    this.researchReward = 3;
-                    this.baseSpeed *= 0.9;
-                    this.speed = this.baseSpeed;
-                    this.size = 18;
-                } else if (type === 'flying') {
-                    this.maxHp = 800;
-                    this.hp = 800;
-                    this.reward = 15;
-                    this.researchReward = 2;
-                    this.baseSpeed *= 1.5;
-                    this.speed = this.baseSpeed;
-                    this.size = 14;
-                    this.flying = true;
-                }
-                
-                this.type = type;
-            }
+      // 향상된 적 클래스
+class Enemy {
+    constructor(type = 'basic') {
+        this.x = path[0].x;
+        this.y = path[0].y;
+        this.pathIndex = 0;
+        
+        // 웨이브에 따른 체력 배수 계산
+        let waveMultiplier = gameState.wave <= 10 ? 
+            1 + (gameState.wave - 1) * 0.2 :  // 웨이브 1-10: 20%씩 증가
+            1.8 + (gameState.wave - 10) * 0.5; // 웨이브 10+: 50%씩 증가
+        
+        // 기본 스탯 설정
+        this.maxHp = Math.floor(800 * waveMultiplier);
+        this.hp = this.maxHp;
+        this.reward = 9;
+        this.researchReward = 1;
+        this.size = 15;
+        this.baseSpeed = 1.2 + Math.random() * 0.4;
+        this.speed = this.baseSpeed;
+        this.slowTimer = 0;
+        this.frozen = false;
+        this.armor = 0;
+        this.regeneration = 0;
+        this.shield = 0;
+        this.maxShield = 0;
+        
+        // 타입별 스탯 조정 (웨이브 배수 적용)
+        if (type === 'strong') {
+            this.maxHp = Math.floor(2000 * waveMultiplier);
+            this.hp = this.maxHp;
+            this.reward = 17;
+            this.researchReward = 2;
+            this.baseSpeed *= 0.75;
+            this.speed = this.baseSpeed;
+            this.size = 20;
+            this.armor = 5 + Math.floor(gameState.wave / 5); // 웨이브 5마다 아머 +1
+        } else if (type === 'fast') {
+            this.maxHp = Math.floor(600 * waveMultiplier);
+            this.hp = this.maxHp;
+            this.reward = 12;
+            this.researchReward = 2;
+            this.baseSpeed *= 2.2;
+            this.speed = this.baseSpeed;
+            this.size = 12;
+        } else if (type === 'boss') {
+            this.maxHp = Math.floor(20000 * waveMultiplier);
+            this.hp = this.maxHp;
+            this.reward = 150;
+            this.researchReward = 10;
+            this.baseSpeed *= 0.5;
+            this.speed = this.baseSpeed;
+            this.size = 35;
+            this.armor = 15 + Math.floor(gameState.wave / 3); // 웨이브 3마다 아머 +1
+            this.regeneration = 2 + Math.floor(gameState.wave / 10); // 웨이브 10마다 재생 +1
+        } else if (type === 'shielded') {
+            this.maxHp = Math.floor(1000 * waveMultiplier);
+            this.hp = this.maxHp;
+            this.shield = Math.floor(500 * waveMultiplier);
+            this.maxShield = this.shield;
+            this.reward = 20;
+            this.researchReward = 3;
+            this.baseSpeed *= 0.9;
+            this.speed = this.baseSpeed;
+            this.size = 18;
+        } else if (type === 'flying') {
+            this.maxHp = Math.floor(800 * waveMultiplier);
+            this.hp = this.maxHp;
+            this.reward = 15;
+            this.researchReward = 2;
+            this.baseSpeed *= 1.5;
+            this.speed = this.baseSpeed;
+            this.size = 14;
+            this.flying = true;
+        }
+        
+        this.type = type;
+    }
             
             update() {
                 // 재생 효과
