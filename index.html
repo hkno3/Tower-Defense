@@ -2556,7 +2556,7 @@
                     
                     // 다른 타워와 너무 가깝지 않은지 확인
                     for (let tower of towers) {
-                        if (Math.sqrt((tower.x - x) ** 2 + (tower.y - y) ** 2) < 55) {
+                        if (Math.sqrt((tower.x - x) ** 2 + (tower.y - y) ** 2) < 35) {
                             canPlace = false;
                             reason = '다른 타워와 너무 가깝습니다';
                             break;
@@ -2569,7 +2569,7 @@
                             let p1 = path[i];
                             let p2 = path[i + 1];
                             let distance = distanceToLine(x, y, p1.x, p1.y, p2.x, p2.y);
-                            if (distance < 40) {
+                            if (distance < 30) {
                                 canPlace = false;
                                 reason = '경로 위에는 건설할 수 없습니다';
                                 break;
@@ -2578,7 +2578,7 @@
                     }
                     
                     // 맵 경계 확인
-                    if (canPlace && (x < 30 || x > canvas.width - 30 || y < 30 || y > canvas.height - 30)) {
+                    if (canPlace && (x < 15 || x > canvas.width - 15 || y < 15 || y > canvas.height - 15)) {
                         canPlace = false;
                         reason = '맵 경계에는 건설할 수 없습니다';
                     }
